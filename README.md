@@ -1,0 +1,1 @@
+This project uses GDELT database to find the most relevant events around the world and plot them on a map.
