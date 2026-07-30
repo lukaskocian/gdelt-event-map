@@ -1,37 +1,41 @@
 This project uses GDELT database to find the most relevant events around the world and plot them on a map.
 
-gdelt-sentiment-map/                  # Kořenová složka
+## Project Structure
+
+```
+gdelt-event-map/
 ├── .github/
 │   └── workflows/
-│       └── data_pipeline.yml         # Instrukce pro GitHub (cron job každých 15 min)
-├── data-pipeline/                    # ZDE SE ODEHRÁVÁ TVŮJ FILTR 1
-│   ├── sql/                          # Tvé BigQuery dotazy (např. fetch_top_events.sql)
-│   ├── llm_summarizer/               # Kód pro napojení na LLM API a generování popisků
-│   ├── normalizer.py                 # Skript pro výpočet vah (Baseline W)
-│   ├── fetch_and_update.py           # Hlavní skript, který stáhne data a updatne lokální DB
-│   └── requirements.txt              # Závislosti (např. google-cloud-bigquery)
-├── backend/                          # ZDE SE ODEHRÁVÁ TVŮJ FILTR 2
-│   ├── database/                     # Lokální databáze (např. mentions_table.sqlite)
-│   ├── routes/                       # API endpointy (např. GET /api/events?timeframe=1D)
-│   ├── utils/                        # Pomocné funkce (např. CAMEO code mapper)
-│   └── server.js / main.py           # Vstupní bod pro tvůj API server
-├── frontend/                         # TVŮJ WEB A MAPA
-│   ├── public/
+│       └── data_pipeline.yml         # GitHub Actions cron job (15-min execution interval)
+├── data-pipeline/                    # PYTHON: Data ingestion & Filter 1 implementation
+│   ├── sql/                          # BigQuery SQL queries (e.g., fetch_top_events.sql)
+│   ├── llm_summarizer/               # LLM API integration for automated event descriptions
+│   ├── normalizer.py                 # Calculates demographic baseline weights (W)
+│   ├── fetch_and_update.py           # Main ETL script: fetches data & updates PostgreSQL
+│   └── requirements.txt              # Python dependencies
+├── backend/                          # TYPESCRIPT: API Server & Filter 2 implementation
+│   ├── database/                     # PostgreSQL connection setup and query builders
+│   ├── routes/                       # API endpoints (e.g., GET /api/events?timeframe=1D)
+│   ├── utils/                        # Helper functions (e.g., CAMEO code mapper)
+│   └── server.ts                     # Main Express/Node.js application entry point
+├── frontend/                         # VUE.JS: Interactive Web Map Client
+│   ├── public/                       # Static assets
 │   ├── src/
-│   │   ├── components/               # React/Vue komponenty (Map.jsx, EventCard.jsx)
-│   │   ├── api/                      # Funkce pro volání tvého backendu
-│   │   └── styles/
-│   └── package.json
-├── docs/                             # DOKUMENTACE PRO PORTFOLIO
-│   ├── ARCHITECTURE.md               # Bloková schémata, jak spolu části komunikují
-│   ├── BASELINE_WEIGHTS.md           # Vysvětlení tvého matematického modelu s populací
-│   └── ENGINEERING_JOURNAL.md        # Tvůj deník (problémy a jak jsi je řešil)
-├── .gitignore
-├── CLAUDE.md                         # Instrukce pro Claude CLI
-└── README.md                         # Hlavní vizitka projektu (Co to je, jak to spustit)
-
+│   │   ├── components/               # Vue components (e.g., Map.vue, EventCard.vue)
+│   │   ├── api/                      # Backend API client functions
+│   │   └── styles/                   # Global stylesheets
+│   └── package.json                  # Node dependencies and build scripts
+├── docs/                             # PORTFOLIO DOCUMENTATION
+│   ├── ARCHITECTURE.md               # System design, block diagrams, and data flow
+│   ├── BASELINE_WEIGHTS.md           # Mathematical model for demographic normalization
+│   └── ENGINEERING_JOURNAL.md        # Developer log: challenges faced and solutions
+├── .gitignore                        # Ignored files (e.g., node_modules, .env, .DS_Store)
+├── CLAUDE.md                         # System prompt and instructions for Claude CLI
+└── README.md                         # Project overview, tech stack, and setup guide
+```
 
 *Sources:*
+
 https://www.gdeltproject.org/data/lookups/CAMEO.eventcodes.txt
 
 http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
