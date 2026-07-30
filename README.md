@@ -29,3 +29,9 @@ gdelt-sentiment-map/                  # Kořenová složka
 ├── .gitignore
 ├── CLAUDE.md                         # Instrukce pro Claude CLI
 └── README.md                         # Hlavní vizitka projektu (Co to je, jak to spustit)
+
+
+*Sources:*
+https://www.gdeltproject.org/data/lookups/CAMEO.eventcodes.txt
+
+http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
