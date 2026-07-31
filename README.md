@@ -1,4 +1,14 @@
-This project uses GDELT database to find the most relevant events around the world and plot them on a map.
+# Global Event Map
+
+A real-time, full-stack data visualization dashboard that ingests, processes, and normalizes *MOST RELEVANT* global events based on GDELT 2.0 Database. Designed to bypass traditional media bias by utilizing demographic normalization and presenting the most critical global events dynamically on an interactive map. Most relevant events are summerized with LLM.
+
+## Architecture & Tech Stack
+
+*   **Data Pipeline:** Python, Google BigQuery, GitHub Actions (Cron Jobs)
+*   **Database:** PostgreSQL (Serverless via Neon.tech)
+*   **Backend:** Bun, ElysiaJS, TypeScript
+*   **Frontend:** Vue.js, TypeScript
+*   **AI Integration:** Gemini API
 
 ## Project Structure
 
@@ -34,8 +44,25 @@ gdelt-event-map/
 └── README.md                         # Project overview, tech stack, and setup guide
 ```
 
-*Sources:*
+## Core Engineering Concepts
 
+1.  **Event Relevance formula** is calculated R = Goldstain_event_value * Normalized_mentions_count
+2.  **Demographic Normalization** 
+3.  **One Big Table** (`mentions_table_15_min`)
+    columns:
+    id (primary key)
+    event_id
+    window_timestamp
+    mention_count
+    normalized_score
+    country_code
+    cameo_code
+    goldstein_scale
+    avg_tone
+    actors
+    urls
+    llm_summary
+
+*Relevant Links:*
 https://www.gdeltproject.org/data/lookups/CAMEO.eventcodes.txt
-
 http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
