@@ -1,0 +1,50 @@
+NÁZVOSLOVÍ ATRIBUTŮ — standard pro celé repo (2026-08-05)
+Plný glosář events atributů: data-pipeline/reference/gdelt_events_attributes.md
+
+PRAVIDLO
+- Atribut z GDELTu se v BQ dotazu REFERUJE jeho GDELT jménem (PascalCase, e.Actor1Name)
+  a HNED se ALIASUJE na snake_case: `e.Actor1Name AS actor1_name`. Tím je výstup BQ =
+  Neon = Python jednotně snake_case. (Postgres neuvozené identifikátory stejně složí na
+  malá písmena, takže snake_case = žádný boj s uvozovkami.)
+- Odvozená metrika bez přesného GDELT slova dostane naše jméno (taky aliasem v BQ):
+    COUNT(DISTINCT MentionIdentifier) → articles_count
+    MAX(MentionTimeDate)              → time_window_15min
+- Interní sloupce (nejsou z GDELTu): articles_1h/1d/1w, relevance_1h/1d/1w, is_dead,
+    ai_summary, best_urls_json, time_added_to_top_events, normalizing_coef, updated_at.
+- Překlad PascalCase→snake_case se dělá pomocí AS v BQ SELECTu (= jediná hranice, u zdroje).
+  Python loader je pak PASS-THROUGH: klíče dictů z query_job.result() == názvy sloupců
+  v Neonu → žádná mapovací tabulka v Pythonu, žádný drift. (Platí, protože do Neonu
+  nahrává v podstatě jen jeden dotaz, gdelt_ingest.sql; kdyby jich bylo víc a sdílely
+  fieldy, centralizace mapování v Pythonu by naopak vyhrála.)
+
+KANONICKÁ TABULKA (co ukládáme) — vlevo referuješ v BQ, vpravo je AS alias = Neon = Python
+  GDELT native              snake_case (AS alias)
+  GlobalEventID             global_event_id          (PK ve fact i top_events)
+  ArticlesCount (odvoz.)    articles_count
+  TimeWindow15min (odvoz.)  time_window_15min
+  DateAdded                 date_added
+  AvgTone                   avg_tone
+  GoldsteinScale            goldstein_scale
+  SourceURL                 source_url
+  EventCode                 event_code
+  ActionGeo_FullName        action_geo_full_name
+  ActionGeo_Type            action_geo_type
+  ActionGeo_CountryCode     action_geo_country_code  (FIPS; joinuje country_baseline.country_code)
+  ActionGeo_Lat             action_geo_lat
+  ActionGeo_Long            action_geo_long
+  Actor1Name                actor1_name
+  Actor1Geo_FullName        actor1_geo_full_name
+  Actor1CountryCode         actor1_country_code      (CAMEO, ne FIPS)
+  Actor2Name                actor2_name
+  Actor2Geo_FullName        actor2_geo_full_name
+  Actor2CountryCode         actor2_country_code      (CAMEO, ne FIPS)
+
+POZNÁMKY
+- Výjimka „CountryCode" ZRUŠENA (2026-08-05): používáme i actor country kódy, takže platí
+  plné GDELT jméno → action_geo_country_code (ne country_code).
+- top_events jen-naše sloupce: time_added_to_top_events (kdy jsme přidali MY, ≠ date_added),
+  best_urls_json (dřív urls), ai_summary, is_dead, articles_*, relevance_*.
+- avg_tone je JEDINÝ events atribut updatovaný per-tick (tón driftuje); ostatní = snapshot.
+- country_baseline.country_code zůstává (naše dimenze). NormArticlesCount se nepoužívá
+  (normalizace až ve Filtru 2, složená do relevance).
+- Fact tabulka: přirozený složený PK (global_event_id, time_window_15min), žádné surrogate id.

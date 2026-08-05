@@ -1,3 +1,8 @@
 .DS_Store
 .env
 google_cloude_key.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
