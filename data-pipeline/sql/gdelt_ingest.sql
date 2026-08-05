@@ -7,9 +7,9 @@ WITH Top200Events AS (
     SELECT
         GlobalEventID                     AS global_event_id,
         COUNT(DISTINCT MentionIdentifier) AS articles_count,
-        
+
         -- MentionTimeDate is INT YYYYMMDDHHMMSS -> PARSE_TIMESTAMP to a UTC TIMESTAMP
-        PARSE_TIMESTAMP('%Y%m%d%H%M%S', CAST(MAX(MentionTimeDate) AS STRING)) AS time_window_15min
+        PARSE_TIMESTAMP('%Y%m%d%H%M%S', CAST(MentionTimeDate AS STRING)) AS time_window_15min
     FROM
         `gdelt-bq.gdeltv2.eventmentions_partitioned`
     WHERE
@@ -17,7 +17,7 @@ WITH Top200Events AS (
         AND MentionTimeDate >= CAST(FORMAT_TIMESTAMP('%Y%m%d%H%M%S', TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE)) AS INT64)
         AND Confidence > 60
     GROUP BY
-        GlobalEventID
+        GlobalEventID, MentionTimeDate
     ORDER BY
         articles_count DESC
     LIMIT 200
