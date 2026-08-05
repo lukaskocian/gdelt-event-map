@@ -175,6 +175,12 @@ Moved from a single "One Big Table" to a **three-table model**:
 - Testability: ingest and top_events-update are separate functions, runnable locally
   without Actions. Populate the fact table with a few manual ingest runs, then exercise
   `update_top_events()` against it. Actions is only the clock, not part of correctness.
+- **Cron timing (2026-08-05):** the ingest query pins the newest complete window
+  (`MentionTimeDate = MAX(...)`). GDELT's BigQuery load lags the window close by a
+  VARIABLE 2-12 min, so schedule each run in the **second half** of the 15-min window
+  (~10-12 min past each :00/:15/:30/:45 boundary), not right after it. Firing too early
+  can let a slow GDELT load push the next run onto a newer window and skip the one
+  between. Real fix (V2): track last-ingested window and backfill gaps.
 
 ## 2026-08-05 — Naming finalized, composite PK, richer metadata, per-tick avg_tone
 
@@ -219,6 +225,21 @@ Moved from a single "One Big Table" to a **three-table model**:
 - Tone history (future): the fact table already stores `avg_tone` per 15-min window, so
   a per-event tone time-series is available for the 7-day TTL for free — logged as a
   Future Improvement (clickable "Tone" popup).
+
+## 2026-08-05 — Ingest the SECOND-newest window, not MAX (window completeness research)
+
+- **Finding (measured, see `docs/research/window_completeness.md`):** a 15-min window
+  appears in BQ 5–10 min *before* its `MentionTimeDate` label, but with a **partial**
+  count that GDELT tops up over the next few minutes (observed 3740 → 5430, ~31%
+  undercount). A window is complete **only once a newer window exists**.
+- **Decision:** supersedes the earlier `WHERE MentionTimeDate = MAX(...)`. Ingest the
+  **second-newest** distinct window (`... ORDER BY MentionTimeDate DESC LIMIT 1 OFFSET 1`)
+  — the newest window that already has a successor, hence settled. Costs ~15 min extra
+  staleness for a complete, stable article count.
+- Reinforces the "run in the second half of the window" cron note: both target settled
+  data. Also keeps the single-window grain (`GROUP BY GlobalEventID`) correct.
+- **TODO:** update `gdelt_ingest.sql` (user-owned) `WHERE` from `= MAX` to the
+  second-newest subquery.
 
 ### Open questions / future
 - Goldstein sign: `ORDER BY relevance DESC` currently favors cooperative events and

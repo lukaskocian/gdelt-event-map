@@ -1,3 +1,15 @@
+# fetch_and_upload.py — GDELT -> BigQuery -> Neon ingest (pipeline step A).
+#
+# SCHEDULING NOTE (GitHub Actions cron):
+# This script ingests only the single newest COMPLETE 15-min window.
+# GDELT's load into BigQuery lags the window close
+# by a VARIABLE amount — sometimes ~2 min, sometimes ~12 min. Therefore schedule each
+# run in the SECOND HALF of the 15-min window (roughly 10-12 min after each
+# :00/:15/:30/:45 boundary), NOT right after it. Firing too early (e.g. +5 min) risks
+# the just-closed window not being loaded yet; because each run grabs only the newest
+# window, a slow GDELT load can then let the following run jump straight to an even newer
+# window and SKIP the one in between.
+
 import os
 from dotenv import load_dotenv
 from google.cloud import bigquery

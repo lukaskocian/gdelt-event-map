@@ -15,10 +15,12 @@ WITH Top200Events AS (
     WHERE
         _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
         AND MentionTimeDate = (
-            -- filter only rows from last 15 min window
-            SELECT MAX(MentionTimeDate)
+            -- filter only rows from last 15 min window that has FULL DATA
+            SELECT DISTINCT MentionTimeDate
             FROM `gdelt-bq.gdeltv2.eventmentions_partitioned`
             WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+            ORDER BY MentionTimeDate DESC
+            LIMIT 1 OFFSET 1 -- skip the latest one (see docs/research/window_completeness.md)
         )
         AND Confidence > 60
     GROUP BY
