@@ -14,7 +14,12 @@ WITH Top200Events AS (
         `gdelt-bq.gdeltv2.eventmentions_partitioned`
     WHERE
         _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-        AND MentionTimeDate >= CAST(FORMAT_TIMESTAMP('%Y%m%d%H%M%S', TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE)) AS INT64)
+        AND MentionTimeDate = (
+            -- filter only rows from last 15 min window
+            SELECT MAX(MentionTimeDate)
+            FROM `gdelt-bq.gdeltv2.eventmentions_partitioned`
+            WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+        )
         AND Confidence > 60
     GROUP BY
         GlobalEventID, MentionTimeDate

@@ -235,6 +235,11 @@ Ideas intentionally left out of the MVP to keep it simple and cheap:
   stronger "bypass media bias" signal (50 articles from one outlet ≠ 50 outlets).
 - **User-tunable relevance weights.** Expose the goldstein/articles weighting so a
   user can re-rank (conflict vs. cooperation) live on the frontend.
+- **Frontend caveats for the 1H timeframe.** (a) A small "!" badge flagging that data
+  trails the real world by ~30 min (GDELT publish lag + our processing). (b) A note
+  that the 1H window is **diurnally skewed**: when a large part of the world is asleep,
+  news volume drops, so short-window rankings over-represent whichever regions are
+  currently awake. A future version could normalize for time-of-day.
 
 *Relevant Links:*
 https://www.gdeltproject.org/data/lookups/CAMEO.eventcodes.txt
