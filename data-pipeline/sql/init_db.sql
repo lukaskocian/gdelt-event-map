@@ -315,17 +315,16 @@ CREATE TABLE IF NOT EXISTS top_events (
     time_added_to_top_events TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), -- when it got to the top 10
     best_urls_json JSONB,          -- top ~5 informative links (word-content + Confidence), set once
     ai_summary TEXT,               -- LLM summary, generated once per event
-    -- Recomputed every 15 min while is_dead = false.
+    -- Recomputed every 15 min by refresh_top_events.sql. Each tick every row is first
+    -- reset to 0, then the current top-10-per-timeframe is upserted with fresh values --
+    -- so an event that dropped out of all top-10s simply reads 0 (no tombstone needed).
     avg_tone REAL,                 -- GDELT AvgTone, refreshed each tick from the event's latest fact row (drifts)
     articles_1h INTEGER NOT NULL DEFAULT 0,
     articles_1d INTEGER NOT NULL DEFAULT 0,
     articles_1w INTEGER NOT NULL DEFAULT 0,
     relevance_1h REAL,
     relevance_1d REAL,
-    relevance_1w REAL,
-    -- Tombstone: true when time_added_to_top_events > 7 days ago AND all article
-    -- windows are 0. Dead rows are kept (history) but no longer recomputed each tick.
-    is_dead BOOLEAN NOT NULL DEFAULT FALSE
+    relevance_1w REAL
 );
 
 CREATE INDEX IF NOT EXISTS idx_top_relevance_1h ON top_events (relevance_1h DESC NULLS LAST);

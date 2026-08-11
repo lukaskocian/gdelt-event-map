@@ -1,14 +1,18 @@
 # fetch_and_upload.py — GDELT -> BigQuery -> Neon ingest (pipeline step A).
 #
-# SCHEDULING NOTE (GitHub Actions cron):
-# This script ingests only the single newest COMPLETE 15-min window.
-# GDELT's load into BigQuery lags the window close
-# by a VARIABLE amount — sometimes ~2 min, sometimes ~12 min. Therefore schedule each
-# run in the SECOND HALF of the 15-min window (roughly 10-12 min after each
-# :00/:15/:30/:45 boundary), NOT right after it. Firing too early (e.g. +5 min) risks
-# the just-closed window not being loaded yet; because each run grabs only the newest
-# window, a slow GDELT load can then let the following run jump straight to an even newer
-# window and SKIP the one in between.
+# WHICH WINDOW WE INGEST:
+# The query pins the SECOND-newest 15-min window (MentionTimeDate = MAX minus one slot),
+# NOT the newest. Measured finding (docs/research/window_completeness.md): a window shows
+# up in BigQuery 5-10 min BEFORE its label but with a PARTIAL count that GDELT keeps
+# topping up; a window is complete only once a newer window exists. So the newest window
+# is always still filling (~31% undercount) — we take the one behind it, which is settled.
+#
+# SCHEDULING (GitHub Actions cron):
+# Because we ingest the already-settled second-newest window, the exact run time is NOT
+# critical for completeness — just fire ~every 15 min (e.g. cron "10,25,40,55 * * * *").
+# Known MVP limitation: each run ingests one window; if GDELT's cadence and the cron drift
+# so that two windows pass between runs, one window is skipped. Real fix (V2): remember the
+# last-ingested window and backfill any gap.
 
 import os
 from dotenv import load_dotenv
@@ -82,5 +86,35 @@ def update_articles_table_15min():
         print(f"Error in fetch_and_upload.py\n{e}")
         raise
 
+
+def update_top_events_table():
+    # Pipeline step B: refresh the top_events leaderboard from articles_table_15_min.
+    # Everything happens inside Postgres via refresh_top_events.sql (reset + upsert),
+    # so no rows are shipped to Python. Runs on Neon, NOT BigQuery.
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("Error: DATABASE_URL was not found. Check file .env")
+        return
+
+    try:
+        sql_path = os.path.join(os.path.dirname(__file__), "sql", "refresh_top_events.sql")
+        with open(sql_path, "r", encoding="utf-8") as file:
+            query = file.read()   # holds BOTH statements: reset UPDATE + INSERT...ON CONFLICT
+
+        print(datetime.datetime.now(), " Refreshing top_events on Neon")
+
+        with closing(psycopg2.connect(db_url)) as conn:
+            with conn:                     # one transaction: reset + upsert are atomic
+                with conn.cursor() as cur:
+                    cur.execute(query)     # no params -> both statements run in one round-trip
+                    affected = cur.rowcount
+
+        print(f"{datetime.datetime.now()} top_events refreshed (last statement affected {affected} rows)")
+
+    except Exception as e:
+        print(f"Error in update_top_events_table\n{e}")
+        raise
+
 if __name__ == "__main__":
-    update_articles_table_15min()
+    update_articles_table_15min()   # step A: ingest fact rows
+    update_top_events_table()       # step B: recompute the leaderboard

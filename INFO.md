@@ -241,6 +241,62 @@ Moved from a single "One Big Table" to a **three-table model**:
 - **TODO:** update `gdelt_ingest.sql` (user-owned) `WHERE` from `= MAX` to the
   second-newest subquery.
 
+## 2026-08-07 — Step B built (`refresh_top_events.sql` + `update_top_events_table()`); `is_dead` dropped
+
+- **New file `data-pipeline/sql/refresh_top_events.sql`** (renamed from the `get_top10_events.sql`
+  stub). Computes the top-10 per timeframe and upserts into `top_events`. Runs on **Neon**, not BQ.
+- **Compute pushed entirely into Postgres** — `INSERT ... SELECT ... ON CONFLICT`, so no rows are
+  shipped to Python and back. `update_top_events_table()` just reads the file and `cur.execute()`s
+  it inside one `with conn:` transaction.
+- **Single-pass scoring (`FILTER`).** Instead of three near-identical CTEs (one scan per timeframe),
+  one scan over the last 7 days with `SUM(...) FILTER (WHERE time_window_15min >= now() - INTERVAL ...)`
+  yields articles_1h/1d/1w together (conditional aggregation). Then three cheap `ORDER BY ... LIMIT 10`
+  rankings over the in-memory result.
+- **`weight` factored out:** `ABS(goldstein) * normalizing_coef` is constant per event, so it's computed
+  once per event and multiplied by each timeframe's article SUM. `country_baseline` LEFT JOIN, missing
+  country → `COALESCE(..., 1.0)`.
+- **`DISTINCT ON (global_event_id) ... ORDER BY global_event_id, time_window_15min DESC`** gives the
+  event's LATEST fact row in one shot — used for both the display snapshot AND the current `avg_tone`.
+  Fixes the "which avg_tone?" question: `MAX(avg_tone)` is wrong (largest value, not newest);
+  DISTINCT ON picks the newest window.
+- **UPSERT semantics — the key point.** `ON CONFLICT (global_event_id) DO UPDATE SET` lists ONLY the
+  volatile columns (`avg_tone`, `articles_*`, `relevance_*`). Display snapshot,
+  `time_added_to_top_events`, `best_urls_json`, `ai_summary` are absent → set once on first insert,
+  never overwritten. This is why we UPSERT and do **not** DELETE+INSERT: delete+insert would wipe the
+  expensive `best_urls_json` (URL algorithm) and `ai_summary` (LLM tokens). New entrants insert those
+  as NULL; step C later fills them `WHERE ai_summary IS NULL`.
+- **`is_dead` tombstone REMOVED** (init_db.sql + README). MVP simplification: instead of tracking dead
+  events and skipping them, each tick first `UPDATE top_events SET ... = 0` (reset all leaderboard
+  columns), then upserts the current top-10s. An event that fell out of every top-10 just reads 0, so
+  it never surfaces via `ORDER BY relevance_1x DESC LIMIT 10`. Full-table reset each tick is fine —
+  `top_events` is tiny. Also dropped the green/yellow/red conceptual grouping (kept only the
+  set-once vs per-tick update distinction in the README, since it's what justifies the memoization).
+- **Design choice — 0 vs actual value when not in a timeframe's top-10:** a row shows a timeframe's
+  articles_/relevance_ ONLY when it's in that timeframe's top-10, else 0 (user's spec). Alternative
+  would be to always store the true per-timeframe SUM; rejected — the frontend only reads
+  `ORDER BY relevance_1x DESC LIMIT 10`, so non-top values are never displayed anyway.
+- **Bug caught in the draft:** the prototype filtered the window with
+  `HAVING time_window_15min <= now() - 1 hour` — wrong twice: it's a per-row filter (belongs in
+  `WHERE`, not `HAVING`, and the column isn't aggregated), and the direction is `>=` (within the last
+  hour), not `<=`. Fixed in the rewrite.
+
+## 2026-08-07 — Relevance is now a per-HOUR rate (divide by timeframe length)
+
+- **Change:** `relevance = ABS(goldstein) * SUM(articles over tf) * normalizing_coef`
+  → `ABS(goldstein) * (SUM(articles over tf) / tf_hours) * normalizing_coef`.
+- **Why:** the raw `SUM` grows with the window length, so 1W would mechanically outrank 1D
+  outrank 1H just by summing more 15-min rows. Dividing by the timeframe length converts the
+  total into an **articles-per-hour rate**, making relevance **comparable across timeframes**.
+- **Unit chosen = HOURS** (`1h=1, 1d=24, 1w=168`). Any consistent unit (windows 4/96/672,
+  minutes 60/1440/10080, hours) is mathematically equivalent — it's a constant divisor per
+  timeframe. Picked hours because "articles/hour" is the most interpretable news-velocity unit
+  and keeps the numbers in a sane range.
+- **Key property:** dividing by a constant does NOT change the ranking WITHIN a timeframe
+  (top-10 per TF is identical) — it only fixes the scale ACROSS timeframes. So the frontend can
+  now put all three leaderboards on one comparable relevance scale / color ramp.
+- Updated: `refresh_top_events.sql` (formula + `scored` CTE), `README.md` (3 spots). Older log
+  entries above keep the pre-division formula as history.
+
 ### Open questions / future
 - Goldstein sign: `ORDER BY relevance DESC` currently favors cooperative events and
   buries conflicts. Decide whether to rank by `ABS(goldstein)` (impact magnitude).

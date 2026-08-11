@@ -54,12 +54,17 @@ gdelt-event-map/
     aggregate, **not** stored per row:
 
     ```
-    R = ABS(goldstein_scale) * SUM(articles_count over the timeframe) * normalizing_coef
+    R = ABS(goldstein_scale) * (SUM(articles_count over the timeframe) / timeframe_hours) * normalizing_coef
     ```
 
     Because the article total is a `SUM` over all 15-minute rows of an event
     within a window (1h / 1d / 1w), relevance is a `GROUP BY` aggregate, not a
-    row attribute. It is recomputed every 15 minutes by the pipeline (SQL
+    row attribute. The `SUM` is divided by the **timeframe length in hours**
+    (`1h=1`, `1d=24`, `1w=168`) so relevance is an articles-**per-hour rate**, not a
+    raw total — otherwise a longer window would always win just by summing more
+    15-min rows, and the three timeframes would not be comparable. (Dividing by a
+    constant does not reorder events *within* a timeframe — it only fixes the scale
+    *across* timeframes.) It is recomputed every 15 minutes by the pipeline (SQL
     `GROUP BY global_event_id … ORDER BY relevance DESC LIMIT 10`) and materialized into
     `top_events`, from which the API reads cheaply.
 
@@ -121,9 +126,11 @@ gdelt-event-map/
     `best_urls_json` and `ai_summary` are set **once** per event (memoized) so an
     event flapping in and out of the top-10 does not trigger repeated LLM calls. The
     leaderboard columns (`articles_*`, `relevance_*`) plus `avg_tone` are recomputed
-    every 15 min while the event is live; a `is_dead` tombstone stops that work for
-    stale events. (`avg_tone` is the one GDELT event attribute that **drifts** as new
-    articles arrive, so unlike the immutable snapshot fields it is refreshed per tick.)
+    every 15 min: each tick resets every row's leaderboard columns to 0, then upserts
+    the current top-10-per-timeframe — so an event that dropped out of all top-10s
+    simply reads 0 (no tombstone / no "dead" bookkeeping needed for the MVP).
+    (`avg_tone` is the one GDELT event attribute that **drifts** as new articles arrive,
+    so unlike the immutable snapshot fields it is refreshed per tick.)
 
     | column | category | notes |
     |---|---|---|
@@ -134,9 +141,8 @@ gdelt-event-map/
     | `best_urls_json` | set once | JSONB, top ~5 links (word-content + Confidence) |
     | `ai_summary` | set once | LLM summary, generated once per event |
     | `avg_tone` | per-tick | GDELT `AvgTone`, refreshed from the event's latest fact row |
-    | `articles_1h/1d/1w` | per-tick | SUM of articles in each window |
-    | `relevance_1h/1d/1w` | per-tick | `ABS(goldstein) * SUM(articles) * normalizing_coef` |
-    | `is_dead` | per-tick | tombstone: `time_added_to_top_events` > 7d ago AND all `articles_*` = 0; if true, no longer recomputed |
+    | `articles_1h/1d/1w` | per-tick | SUM of articles in each window (0 when not in that timeframe's top-10) |
+    | `relevance_1h/1d/1w` | per-tick | `ABS(goldstein) * (SUM(articles) / timeframe_hours) * normalizing_coef`, i.e. articles/hour (0 when not in that timeframe's top-10) |
 
 ### Pipeline schedule
 
@@ -153,13 +159,17 @@ EVERY 15 MIN  (fetch_and_update.py):
         normalization; empirically ~100 events have ≥2 articles, so 200 is a safe cap]
      5. UPSERT those rows into articles_table_15_min
 
-  B. UPDATE top_events  (SQL over articles_table_15_min — Filter 2, normalization here):
-     6. per timeframe (1h/1d/1w): SUM(articles_count) per event over the window,
-        JOIN country_baseline and apply per-country normalization:
-        relevance = ABS(goldstein) * SUM(articles) * normalizing_coef   [Filter 2]
-     7. recompute articles_*, relevance_* AND avg_tone (from each event's latest fact
-        row) for ALL live (is_dead=false) rows; INSERT events newly cracking a top-10
-     8. mark is_dead = true where time_added_to_top_events > 7 days ago AND articles_* all 0
+  B. UPDATE top_events  (refresh_top_events.sql over articles_table_15_min — Filter 2,
+     normalization here; the whole step is one Postgres transaction, no data leaves the DB):
+     6. one pass over the last 7 days: per event SUM(articles_count) split per timeframe
+        (1h/1d/1w) with FILTER, JOIN country_baseline and apply per-country normalization;
+        divide by the timeframe length in hours so relevance is a per-hour rate:
+        relevance = ABS(goldstein) * (SUM(articles) / tf_hours) * normalizing_coef   [Filter 2]
+     7. rank each timeframe, keep top-10; UNION them into 10-30 distinct events; take each
+        event's latest fact row (DISTINCT ON) for its display snapshot + current avg_tone
+     8. reset every top_events row's leaderboard columns to 0, then UPSERT the current
+        top-10s (DO UPDATE SET touches ONLY avg_tone + articles_*/relevance_*, so
+        best_urls_json, ai_summary and the display snapshot are never overwritten)
 
   C. ENRICH new entrants only:
      9. one batched BigQuery query over eventmentions_partitioned (last 24h,
