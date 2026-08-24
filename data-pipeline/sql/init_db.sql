@@ -11,12 +11,12 @@ CREATE TABLE IF NOT EXISTS articles_table_15_min (
 
     date_added TIMESTAMP WITH TIME ZONE,
     avg_tone REAL,
-    goldstein_scale REAL,
+    goldstein_scale REAL NOT NULL,
     source_url TEXT,
     event_code VARCHAR(10),
     action_geo_full_name TEXT,
     action_geo_type SMALLINT,
-    action_geo_country_code VARCHAR(3),
+    action_geo_country_code VARCHAR(3) NOT NULL,
     action_geo_lat REAL,
     action_geo_long REAL,
     actor1_name TEXT,
@@ -322,9 +322,9 @@ CREATE TABLE IF NOT EXISTS top_events (
     articles_1h INTEGER NOT NULL DEFAULT 0,
     articles_1d INTEGER NOT NULL DEFAULT 0,
     articles_1w INTEGER NOT NULL DEFAULT 0,
-    relevance_1h REAL,
-    relevance_1d REAL,
-    relevance_1w REAL
+    relevance_1h REAL NOT NULL,
+    relevance_1d REAL NOT NULL,
+    relevance_1w REAL NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_top_relevance_1h ON top_events (relevance_1h DESC NULLS LAST);
