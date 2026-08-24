@@ -62,3 +62,4 @@ WHERE
     -- see docs/research for why we join Top200Events with events iniclized during last 24 h in GDELT event table
     e._PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
     AND e.ActionGeo_CountryCode IS NOT NULL -- because this project is a map
+    AND e.GoldsteinScale IS NOT NULL -- because we calculate relevance based on goldstein scale

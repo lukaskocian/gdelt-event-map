@@ -297,12 +297,12 @@ CREATE TABLE IF NOT EXISTS top_events (
     -- Immutable display snapshot, copied from articles_table_15_min on entry
     -- (fact rows are pruned after 7 days, so top_events must be self-sufficient).
     date_added TIMESTAMP WITH TIME ZONE,
-    goldstein_scale REAL,
+    goldstein_scale REAL NOT NULL,
     event_code VARCHAR(10),
     source_url TEXT,
     action_geo_full_name TEXT,
     action_geo_type SMALLINT,
-    action_geo_country_code VARCHAR(3),
+    action_geo_country_code VARCHAR(3) NOT NULL,
     action_geo_lat REAL,
     action_geo_long REAL,
     actor1_name TEXT,
