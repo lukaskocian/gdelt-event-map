@@ -78,9 +78,10 @@ relevance_per_article_per_timeframe AS (
         action_geo_country_code,
         goldstein_scale,
 
-        articles_1w / 168.0 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1w,
-        articles_1d / 24.0 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1d,
-        articles_1h * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1h
+        -- COALESCE ... if country code is not in country_baseline => relevance is 0
+        articles_1w / 168.0 * COALESCE(SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code, 0.0) * ABS(goldstein_scale) AS relevance_1w,
+        articles_1d / 24.0 * COALESCE(SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code, 0.0) * ABS(goldstein_scale) AS relevance_1d,
+        articles_1h * COALESCE(SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code, 0.0) * ABS(goldstein_scale) AS relevance_1h
     FROM
         number_of_articles_per_timeframe
 ),

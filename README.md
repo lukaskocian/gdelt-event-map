@@ -193,6 +193,7 @@ per-event queries), with a **bounded `_PARTITIONTIME` window** to cap cost.
 Data-driven decisions to be reproduced and documented under `docs/research/`
 (each writeup: **question → query → result table → decision**):
 
+- [ ] **Country_baselines check** - check if table Country_baselines has all country codes, events in countries that are not in the table will not get into top events
 - [ ] **Metadata coverage** — one SQL query confirming what share of events appearing
   in `eventmentions` (last 15 min) have their `events` row within the last day
   (observed ≈97%). Justifies the **1-day** metadata JOIN window; the ~3% without
