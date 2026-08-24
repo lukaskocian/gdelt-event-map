@@ -57,9 +57,10 @@ INSERT INTO top_events (
 WITH number_of_articles_per_timeframe AS (
     SELECT
         global_event_id,
-        SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 week') AS articles_1w, -- articles_table_15_min should not have more than 1week of data but this FILTER is for safety
-        SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 day') as articles_1d,
-        SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 hour') as articles_1h,
+        -- COALESCE ... events with 0 articles will have number 0 instead of NULL
+        COALESCE(SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 week'), 0) AS articles_1w, -- articles_table_15_min should not have more than 1week of data but this FILTER is for safety
+        COALESCE(SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 day'), 0) as articles_1d,
+        COALESCE(SUM(articles_count) FILTER (WHERE time_window_15min >= NOW() - INTERVAL '1 hour'), 0) as articles_1h,
         MAX(action_geo_country_code) AS action_geo_country_code,
         MAX(goldstein_scale) AS goldstein_scale
     FROM
