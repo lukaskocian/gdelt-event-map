@@ -94,7 +94,7 @@ top_1w AS (
     FROM
        relevance_per_article_per_timeframe
     ORDER BY
-        relevance_1w DESC
+        relevance_1w DESC NULLS LAST
     LIMIT 10
 ),
 
@@ -106,7 +106,7 @@ top_1d AS (
     FROM
        relevance_per_article_per_timeframe
     ORDER BY
-        relevance_1d DESC
+        relevance_1d DESC NULLS LAST
     LIMIT 10
 ),
 
@@ -118,7 +118,7 @@ top_1h AS (
     FROM
        relevance_per_article_per_timeframe
     ORDER BY
-        relevance_1h DESC
+        relevance_1h DESC NULLS LAST
     LIMIT 10
 ),
 
