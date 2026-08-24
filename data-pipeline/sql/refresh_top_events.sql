@@ -27,9 +27,10 @@ SET
 INSERT INTO top_events (
     global_event_id,
     date_added,
+    avg_tone,
     goldstein_scale,
-    event_code,
     source_url,
+    event_code,
     action_geo_full_name,
     action_geo_type,
     action_geo_country_code,
@@ -41,16 +42,15 @@ INSERT INTO top_events (
     actor2_name,
     actor2_geo_full_name,
     actor2_country_code,
+    articles_1h,
+    relevance_1h,
+    articles_1d,
+    relevance_1d,
+    articles_1w,
+    relevance_1w,
     time_added_to_top_events,
     best_urls_json,
-    ai_summary,
-    avg_tone,
-    articles_1h,
-    articles_1d,
-    articles_1w,
-    relevance_1h,
-    relevance_1d,
-    relevance_1w
+    ai_summary
 )
 
 
@@ -77,8 +77,8 @@ relevance_per_article_per_timeframe AS (
         action_geo_country_code,
         goldstein_scale,
 
-        articles_1w / 168 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1w,
-        articles_1d / 24 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1d,
+        articles_1w / 168.0 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1w,
+        articles_1d / 24.0 * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1d,
         articles_1h * (SELECT normalizing_coef FROM country_baseline WHERE country_code = action_geo_country_code) * ABS(goldstein_scale) AS relevance_1h
     FROM
         number_of_articles_per_timeframe
@@ -142,7 +142,23 @@ gdelt_data_top_10_to_30 AS ( -- almost ready but without relevance and articles 
 )
 
 SELECT
-    g.*,
+    g.global_event_id,
+    g.date_added,
+    g.avg_tone,
+    g.goldstein_scale,
+    g.source_url,
+    g.event_code,
+    g.action_geo_full_name,
+    g.action_geo_type,
+    g.action_geo_country_code,
+    g.action_geo_lat,
+    g.action_geo_long,
+    g.actor1_name,
+    g.actor1_geo_full_name,
+    g.actor1_country_code,
+    g.actor2_name,
+    g.actor2_geo_full_name,
+    g.actor2_country_code,
     
     COALESCE(h.articles_1h, 0) AS articles_1h,
     COALESCE(h.relevance_1h, 0) AS relevance_1h,
@@ -153,7 +169,11 @@ SELECT
     COALESCE(w.articles_1w, 0) AS articles_1w,
     COALESCE(w.relevance_1w, 0) AS relevance_1w,
 
-    NOW() AS time_added_to_top_events
+    NOW() AS time_added_to_top_events,
+
+    NULL AS best_urls_json,
+    NULL AS ai_summary
+
 FROM 
     gdelt_data_top_10_to_30 g
 LEFT JOIN top_1h h USING (global_event_id)
