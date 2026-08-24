@@ -303,3 +303,8 @@ Moved from a single "One Big Table" to a **three-table model**:
 - `relevance_1h/1d/1w` are overwritten each tick → no relevance *time series* is
   retained (fact table is pruned after 7 days). If historical relevance evolution
   is ever needed, add an append-only `event_relevance_history` table.
+
+
+refresh_top_events.sql - instead of creating 3 tables (WITH) for each timeframe (scaing articles_table_15_min 3x), we use FILTER
+
+refresh_top_events.sql - using COALESCE if country code is not in country_baseline => relevance is 0 (that way we can keep track of what countries we have there and ignore codes for eg. oceans, countries that can not be ploted on the map for some reason)
