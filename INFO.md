@@ -167,7 +167,7 @@ Moved from a single "One Big Table" to a **three-table model**:
 
 ## 2026-08-04 — Scheduling: stateless single-shot script + GitHub Actions cron
 
-- **`fetch_and_update.py` is single-shot (no `while` loop).** It runs top-to-bottom
+- **`update_db.py` is single-shot (no `while` loop).** It runs top-to-bottom
   once and exits. GitHub Actions (`on: schedule: cron "*/15 * * * *"`) is the external
   scheduler — spins up a fresh runner every 15 min, runs the script once, tears down.
 - Secrets (`DATABASE_URL`, GCP service-account JSON) live in GitHub repo Secrets,
@@ -308,3 +308,7 @@ Moved from a single "One Big Table" to a **three-table model**:
 refresh_top_events.sql - instead of creating 3 tables (WITH) for each timeframe (scaing articles_table_15_min 3x), we use FILTER
 
 refresh_top_events.sql - using COALESCE if country code is not in country_baseline => relevance is 0 (that way we can keep track of what countries we have there and ignore codes for eg. oceans, countries that can not be ploted on the map for some reason)
+
+update_db.py (formally fetch_and_update.py)
+    - migration from psycopg2 to psycopg3
+    - update_articles_table_15min() - we use named parameters (see sequence_s) so the changing column order in gdelt_ingest.sql won't break the insert
