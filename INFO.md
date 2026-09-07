@@ -312,3 +312,7 @@ refresh_top_events.sql - using COALESCE if country code is not in country_baseli
 update_db.py (formally fetch_and_update.py)
     - migration from psycopg2 to psycopg3
     - update_articles_table_15min() - we use named parameters (see sequence_s) so the changing column order in gdelt_ingest.sql won't break the insert
+
+PROBLEM! I did a research - through BQ Console I queried an article with most mentions over last hour.
+The article had over 100 mentions but all where one article posted on several different platforms.
+This program solves country bias but not bias of big news companies. (see docs/research/)

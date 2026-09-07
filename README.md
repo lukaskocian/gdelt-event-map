@@ -209,6 +209,8 @@ Data-driven decisions to be reproduced and documented under `docs/research/`
   placeholders; `normalizer.py` refreshes them). Clamped to **[0.2, 5.0]** so
   micro-states (e.g. Vatican) don't hit absurd extremes. Applied at **Filter 2**
   (relevance), not at ingest. → `docs/research/normalization_coefficients.md`
+- [ ] **Big news company bias** - document how 1 event can get high fake relevance
+    because one article is posted by big news company to dozents of different websites
 
 **Reference data location:** the repo is the single source of truth (git-tracked,
 transparent). Country `normalizing_coef` values are seeded **directly in
