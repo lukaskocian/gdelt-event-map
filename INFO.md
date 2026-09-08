@@ -315,4 +315,5 @@ update_db.py (formally fetch_and_update.py)
 
 PROBLEM! I did a research - through BQ Console I queried an article with most mentions over last hour.
 The article had over 100 mentions but all where one article posted on several different platforms.
-This program solves country bias but not bias of big news companies. (see docs/research/)
+This program solves country bias but not bias of big news companies. (see docs/research/big_news_company)
+SOLUTION: Edited gdelt_ingest.sql so insted doing article deduplication by whole URL we do it by URL slug

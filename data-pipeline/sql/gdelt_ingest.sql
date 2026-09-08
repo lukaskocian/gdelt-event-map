@@ -5,8 +5,21 @@ WITH Top200Events AS (
 
     -- there can be more rows concerning one event and ONE ARTICLE in eventmentions_partitioned, therefore we use DISTINCT MentionIdentifier
     SELECT
-        GlobalEventID                     AS global_event_id,
-        COUNT(DISTINCT MentionIdentifier) AS articles_count,
+        GlobalEventID AS global_event_id,
+
+        -- deduplication using not whole URL (MentionIdentifier) but URL slug
+        COUNT(DISTINCT IFNULL(
+          NULLIF(
+            TRIM(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  LOWER(REGEXP_EXTRACT(MentionIdentifier, r'([^/?#]+)/?(?:[?#].*)?$')),
+                  r'\.(html?|php|aspx)$', ''),
+                r'[^a-z]+', '-'),
+              '-'),
+            ''),
+          MentionIdentifier
+        )) AS articles_count,
 
         -- MentionTimeDate is INT YYYYMMDDHHMMSS -> PARSE_TIMESTAMP to a UTC TIMESTAMP
         PARSE_TIMESTAMP('%Y%m%d%H%M%S', CAST(MentionTimeDate AS STRING)) AS time_window_15min
