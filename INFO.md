@@ -313,7 +313,22 @@ update_db.py (formally fetch_and_update.py)
     - migration from psycopg2 to psycopg3
     - update_articles_table_15min() - we use named parameters (see sequence_s) so the changing column order in gdelt_ingest.sql won't break the insert
 
-PROBLEM! I did a research - through BQ Console I queried an article with most mentions over last hour.
+PROBLEM 0:
+I did a research - through BQ Console I queried an article with most mentions over last hour.
 The article had over 100 mentions but all where one article posted on several different platforms.
 This program solves country bias but not bias of big news companies. (see docs/research/big_news_company)
 SOLUTION: Edited gdelt_ingest.sql so insted doing article deduplication by whole URL we do it by URL slug
+
+PROBLEM 1:
+I tested new query get_slug.sql on BQ Console for 5 events, but only 4 were shown. The reason was that the 5th had all slugs NULL, because of malfunctional regex.
+
+Example of the URL that has slug but the formal regex made it NULL.
+https://www.index.hr/vijesti/clanak/evo-ciji-je-otpad-koji-je-zavrsio-u-benkovackom-kamenolomu-zlatara-dodica/2832581.aspx?index_ref=homepage_comment_box_d&commentId=11962623
+
+And because in gdelt_ingest.sql, mentions with slug NULL do not undergo deduplication by slug, it triggered PROBLEM 0 - same article was counted over 20 times.
+
+SOLUTION: Changed the way of extracting slugs. Now we are spliting URL with / and choosing the biggest part.
+
+PROBLEM 3:
+Languages like arabic or hindi are unicoded in URL, therefore instead of words in slug we see eg. "BD%1A%C2" which is not suitable for LLM prompt.
+SOLUTION: Added JS function to gdelt_ingest.sql and get_slugs.sql that decodes the URL. JS overhead makes it slower but for our amount of rows it is not a problem.

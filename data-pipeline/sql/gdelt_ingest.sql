@@ -1,6 +1,18 @@
 -- Gets top 200 events of last 15 min from GDELT
 -- note: renames from pascal case to snake case are because of compatibility with PostgreSQL DB in Neon
 
+
+CREATE TEMP FUNCTION URL_DECODE(url STRING)
+RETURNS STRING
+LANGUAGE js AS """
+  try {
+    return decodeURI(url);
+  } catch (e) {
+    return url;
+  }
+""";
+
+
 WITH Top200Events AS (
 
     -- there can be more rows concerning one event and ONE ARTICLE in eventmentions_partitioned, therefore we use DISTINCT MentionIdentifier
@@ -9,15 +21,27 @@ WITH Top200Events AS (
 
         -- deduplication using not whole URL (MentionIdentifier) but URL slug
         COUNT(DISTINCT IFNULL(
-          NULLIF(
-            TRIM(
-              REGEXP_REPLACE(
-                REGEXP_REPLACE(
-                  LOWER(REGEXP_EXTRACT(MentionIdentifier, r'([^/?#]+)/?(?:[?#].*)?$')),
-                  r'\.(html?|php|aspx)$', ''),
-                r'[^a-z]+', '-'),
-              '-'),
-            ''),
+            (
+                -- we split the URL into several parts by /
+                SELECT
+                    url_part
+                FROM 
+                    UNNEST(
+                        SPLIT(
+                            REGEXP_REPLACE(
+                                REGEXP_REPLACE(
+                                    URL_DECODE(MentionIdentifier),
+                                r'[?#].*', ''), -- delete the url query/section part
+                            r'\.(html|htm|php|aspx|cms)$', ''), 
+                        '/')
+                    ) AS url_part
+                WHERE 
+                    LENGTH(url_part) > 8
+                    AND REGEXP_CONTAINS(url_part, r'\p{L}') -- the part contains world character of any language
+                    AND NOT REGEXP_CONTAINS(url_part, r'^www') -- the part is not domain
+                ORDER BY LENGTH(url_part) DESC
+                LIMIT 1 -- if there are no url parts left => NULL
+            ),
           MentionIdentifier
         )) AS articles_count,
 

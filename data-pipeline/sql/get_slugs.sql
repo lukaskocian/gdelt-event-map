@@ -1,19 +1,42 @@
+CREATE TEMP FUNCTION URL_DECODE(url STRING)
+RETURNS STRING
+LANGUAGE js AS """
+  try {
+    return decodeURI(url);
+  } catch (e) {
+    return url;
+  }
+""";
+
+
 WITH raw_slugs AS (
   SELECT 
     GLOBALEVENTID,
     Confidence,
     SentenceID,
 
-    NULLIF(
-      TRIM(
-        REGEXP_REPLACE(
-          REGEXP_REPLACE(
-            LOWER(REGEXP_EXTRACT(MentionIdentifier, r'([^/?#]+)/?(?:[?#].*)?$')),
-            r'\.(html?|php|aspx)$', ''),
-          r'[^a-z]+', '-'),
-        '-'),
-      '')
-    AS slug
+  (
+    -- we split the URL into several parts by /
+    SELECT
+        url_part
+    FROM 
+        UNNEST(
+            SPLIT(
+                REGEXP_REPLACE(
+                    REGEXP_REPLACE(
+                        URL_DECODE(MentionIdentifier),
+                    r'[?#].*', ''), -- delete the url query/section part
+                r'\.(html|htm|php|aspx|cms)$', ''), 
+            '/')
+        ) AS url_part
+    WHERE 
+        LENGTH(url_part) > 8
+        AND REGEXP_CONTAINS(url_part, r'\p{L}') -- the part contains world character of any language
+        AND NOT REGEXP_CONTAINS(url_part, r'^www') -- the part is not domain
+    ORDER BY LENGTH(url_part) DESC
+    LIMIT 1 -- if there are no url parts left => NULL
+
+  ) AS slug
 
   FROM 
     `gdelt-bq.gdeltv2.eventmentions_partitioned`
