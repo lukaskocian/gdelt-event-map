@@ -14,6 +14,7 @@ WITH raw_slugs AS (
     GLOBALEVENTID,
     Confidence,
     SentenceID,
+    MentionIdentifier,
 
   (
     -- we split the URL into several parts by /
@@ -51,7 +52,8 @@ no_empty_slugs_and_duplicates AS (
     GLOBALEVENTID,
     slug,
     MAX(Confidence) AS Confidence,
-    MIN(SentenceID) AS SentenceID
+    MIN(SentenceID) AS SentenceID,
+    MAX(MentionIdentifier) AS MentionIdentifier
   FROM
     raw_slugs
   WHERE
@@ -64,6 +66,7 @@ slug_importance_added AS (
     SELECT
         GLOBALEVENTID,
         slug,
+        MentionIdentifier,
         ROW_NUMBER() OVER(
             PARTITION BY GLOBALEVENTID
             ORDER BY SentenceID ASC, Confidence DESC
@@ -74,7 +77,13 @@ slug_importance_added AS (
 
 SELECT
     GLOBALEVENTID,
-    STRING_AGG(slug, ', ') AS best_slugs
+    ARRAY_AGG(
+        STRUCT(
+            slug,
+            MentionIdentifier AS original_url
+        )
+        ORDER BY slug_importance ASC
+    ) AS best_slugs
 FROM
    slug_importance_added
 WHERE
