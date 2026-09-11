@@ -50,7 +50,8 @@ INSERT INTO top_events (
     relevance_1w,
     time_added_to_top_events,
     best_urls_json,
-    ai_summary
+    ai_summary,
+    evidence_quality
 )
 
 
@@ -174,7 +175,8 @@ SELECT
     NOW() AS time_added_to_top_events,
 
     NULL AS best_urls_json,
-    NULL AS ai_summary
+    NULL AS ai_summary,
+    NULL AS evidence_quality
 
 FROM 
     gdelt_data_top_10_to_30 g

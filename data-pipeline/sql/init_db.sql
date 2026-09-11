@@ -314,7 +314,8 @@ CREATE TABLE IF NOT EXISTS top_events (
     -- Set once on entry, immutable afterwards.
     time_added_to_top_events TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), -- when it got to the top 10
     best_urls_json JSONB,          -- top ~5 informative links (word-content + Confidence), set once
-    ai_summary TEXT,               -- LLM summary, generated once per event
+    ai_summary TEXT,
+    evidence_quality TINYINT,
     -- Recomputed every 15 min by refresh_top_events.sql. Each tick every row is first
     -- reset to 0, then the current top-10-per-timeframe is upserted with fresh values --
     -- so an event that dropped out of all top-10s simply reads 0 (no tombstone needed).
