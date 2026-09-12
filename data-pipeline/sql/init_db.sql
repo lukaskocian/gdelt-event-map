@@ -314,7 +314,7 @@ CREATE TABLE IF NOT EXISTS top_events (
     time_added_to_top_events TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     best_urls_json JSONB,
     ai_summary TEXT,
-    evidence_quality SMALLINT,
+    ai_evidence_quality SMALLINT,
     -- Recomputed every 15 min by refresh_top_events.sql. Each tick every row is first
     avg_tone REAL,
     articles_1h INTEGER NOT NULL DEFAULT 0,
