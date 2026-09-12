@@ -76,7 +76,7 @@ slug_importance_added AS (
 )
 
 SELECT
-    GLOBALEVENTID,
+    GLOBALEVENTID AS global_event_id,
     ARRAY_AGG(
         STRUCT(
             slug,
