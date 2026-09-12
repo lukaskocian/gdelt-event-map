@@ -295,7 +295,6 @@ ON CONFLICT (country_code) DO NOTHING;
 CREATE TABLE IF NOT EXISTS top_events (
     global_event_id BIGINT PRIMARY KEY,
     -- Immutable display snapshot, copied from articles_table_15_min on entry
-    -- (fact rows are pruned after 7 days, so top_events must be self-sufficient).
     date_added TIMESTAMP WITH TIME ZONE,
     goldstein_scale REAL NOT NULL,
     event_code VARCHAR(10),
@@ -311,15 +310,13 @@ CREATE TABLE IF NOT EXISTS top_events (
     actor2_name TEXT,
     actor2_geo_full_name TEXT,
     actor2_country_code VARCHAR(3),
-    -- Set once on entry, immutable afterwards.
-    time_added_to_top_events TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), -- when it got to the top 10
-    best_urls_json JSONB,          -- top ~5 informative links (word-content + Confidence), set once
+    -- Set once on entry, immutable afterwards
+    time_added_to_top_events TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    best_urls_json JSONB,
     ai_summary TEXT,
-    evidence_quality TINYINT,
+    evidence_quality SMALLINT,
     -- Recomputed every 15 min by refresh_top_events.sql. Each tick every row is first
-    -- reset to 0, then the current top-10-per-timeframe is upserted with fresh values --
-    -- so an event that dropped out of all top-10s simply reads 0 (no tombstone needed).
-    avg_tone REAL,                 -- GDELT AvgTone, refreshed each tick from the event's latest fact row (drifts)
+    avg_tone REAL,
     articles_1h INTEGER NOT NULL DEFAULT 0,
     articles_1d INTEGER NOT NULL DEFAULT 0,
     articles_1w INTEGER NOT NULL DEFAULT 0,
