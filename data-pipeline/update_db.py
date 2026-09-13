@@ -7,6 +7,7 @@ from google.cloud import bigquery
 import datetime
 import psycopg
 from psycopg.types.json import Jsonb
+from psycopg.rows import dict_row
 import json
 
 from gemini_summary_maker import get_summary
@@ -176,6 +177,7 @@ def add_ai_summary(db_url):
             date_added,
             goldstein_scale,
             event_code,
+            event_description,
             source_url,
             action_geo_full_name,
             action_geo_type,
@@ -199,6 +201,8 @@ def add_ai_summary(db_url):
             relevance_1w
         FROM
             top_events
+        LEFT JOIN
+            event_cameo_codes USING (event_code)
         WHERE
             ai_summary IS NULL
 
@@ -210,9 +214,12 @@ def add_ai_summary(db_url):
     """
 
     try:
-        with psycopg.connect(db_url) as conn:
+        with psycopg.connect(
+                db_url,
+                row_factory=dict_row # output format is [{col_1 : val, col_2 : val ,...}, same for other events...]
+            ) as conn:
             result = conn.execute(query)
-            top_events_without_ai_summary_data = [i[0] for i in result.fetchall()]
+            top_events_without_ai_summary_data = result.fetchall()
     except Exception as e:
         print(f"ERROR: add_ai_summary() getting top_events data - {e}")
         raise
@@ -260,7 +267,7 @@ def delete_old_rows_table_15min(db_url):
         DELETE FROM
             articles_table_15_min
         WHERE
-            time_window_15min < NOW() - INTERVAL "1 week";
+            time_window_15min < NOW() - INTERVAL '1 week';
     """
 
     try:
