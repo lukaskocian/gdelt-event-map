@@ -22,8 +22,7 @@ def get_query_from_sql_file(file_name):
         with open(sql_path_get_slugs, "r", encoding="utf-8") as file:
             query = file.read()
     except Exception as e:
-        print(f"Error: can not read {file_name} - {e}")
-        raise
+        raise ValueError(f"Can not read {file_name} - {e}")
 
     return query
 
@@ -33,8 +32,7 @@ def load_env_vars():
 
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
-        print("Error: DATABASE_URL was not found. Check file .env")
-        raise
+        raise ValueError("DATABASE_URL was not found. Check file .env")
 
     bq_client = bigquery.Client() #finds api key by itself
 
@@ -81,8 +79,7 @@ def update_articles_table_15min(db_url, bq_client):
                     params_seq=rows
                 )
     except Exception as e:
-        print(f"Error: Problem in update_articles_table_15min() - {e}")
-        raise
+        raise ValueError(f"Problem in update_articles_table_15min() - {e}")
 
 def update_top_events_table(db_url):
     # refresh the top_events leaderboard from articles_table_15_min.
@@ -94,8 +91,7 @@ def update_top_events_table(db_url):
                 query=get_query_from_sql_file("refresh_top_events.sql")
             )
     except Exception as e:
-        print(f"Error: Problem in update_top_events_table() - {e}")
-        raise
+        raise ValueError(f"Problem in update_top_events_table() - {e}")
 
 def add_slugs(db_url, bq_client):
 
@@ -106,8 +102,7 @@ def add_slugs(db_url, bq_client):
             )
             event_ids_without_urls = [i[0] for i in result.fetchall()]
     except Exception as e:
-        print(f"ERROR: add_slugs() getting global_event_id - {e}")
-        raise
+        raise ValueError(f"add_slugs() getting global_event_id - {e}")
 
     if len(event_ids_without_urls) == 0:
         print("All top events have their URLs.")
@@ -151,8 +146,7 @@ def add_slugs(db_url, bq_client):
                     params_seq=params
                 )
     except Exception as e:
-        print(f"ERROR: Can not upload URLs to top_events table - {e}")
-        raise
+        raise ValueError(f"Can not upload URLs to top_events table - {e}")
     
 def add_ai_summary(db_url):
 
@@ -166,8 +160,7 @@ def add_ai_summary(db_url):
             )
             top_events_without_ai_summary_data = result.fetchall()
     except Exception as e:
-        print(f"ERROR: add_ai_summary() getting top_events data - {e}")
-        raise
+        raise ValueError(f"add_ai_summary() getting top_events data - {e}")
 
     if len(top_events_without_ai_summary_data) == 0:
         print("All top events have their AI Summary")
@@ -197,8 +190,7 @@ def add_ai_summary(db_url):
                     params_seq=params
                 )
     except Exception as e:
-        print(f"ERROR: Can not upload AI summaries to top_events table - {e}")
-        raise
+        raise ValueError(f"Can not upload AI summaries to top_events table - {e}")
 
 def delete_old_rows_table_15min(db_url):
 
@@ -208,8 +200,7 @@ def delete_old_rows_table_15min(db_url):
                 query=get_query_from_sql_file("delete_old_rows.sql")
             )
     except Exception as e:
-        print(f"Error: Problem in delete_old_rows_table_15min() - {e}")
-        raise
+        raise ValueError(f"Problem in delete_old_rows_table_15min() - {e}")
 
 
 if __name__ == "__main__":
