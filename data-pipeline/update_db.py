@@ -204,7 +204,7 @@ def delete_old_rows_table_15min(db_url):
 
 
 if __name__ == "__main__":
-    print(datetime.datetime.now(), "*** STARTING fetch_and_upload.py ***")
+    print(datetime.datetime.now(), "*** STARTING update_db.py ***")
 
     db_url, bq_client = load_env_vars()
 
