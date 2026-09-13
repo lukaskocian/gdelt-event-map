@@ -76,7 +76,10 @@ def update_articles_table_15min(db_url, bq_client):
     try:
         with psycopg.connect(db_url) as conn:
             with conn.cursor() as cur:
-                cur.executemany(write_query, rows)
+                cur.executemany(
+                    query=write_query, 
+                    params_seq=rows
+                )
     except Exception as e:
         print(f"Error: Problem in update_articles_table_15min() - {e}")
         raise
@@ -88,7 +91,7 @@ def update_top_events_table(db_url):
     try:
         with psycopg.connect(db_url) as conn:
             conn.execute(
-                get_query_from_sql_file("refresh_top_events.sql")
+                query=get_query_from_sql_file("refresh_top_events.sql")
             )
     except Exception as e:
         print(f"Error: Problem in update_top_events_table() - {e}")
@@ -96,24 +99,11 @@ def update_top_events_table(db_url):
 
 def add_slugs(db_url, bq_client):
 
-    query = """
-        SELECT 
-            global_event_id
-        FROM
-            top_events
-        WHERE
-            best_urls_json IS NULL
-
-            AND
-
-            (relevance_1h > 0
-            OR relevance_1d > 0
-            OR relevance_1w > 0)
-    """
-
     try:
         with psycopg.connect(db_url) as conn:
-            result = conn.execute(query)
+            result = conn.execute(
+                query=get_query_from_sql_file("events_without_slugs.sql")
+            )
             event_ids_without_urls = [i[0] for i in result.fetchall()]
     except Exception as e:
         print(f"ERROR: add_slugs() getting global_event_id - {e}")
@@ -153,72 +143,27 @@ def add_slugs(db_url, bq_client):
         print("BigQuery returned no slugs")
         return
 
-    upload_slugs_query = f"""
-
-        UPDATE top_events 
-        SET best_urls_json = %(best_slugs)s
-        WHERE global_event_id = %(global_event_id)s
-
-    """
-
     try:
         with psycopg.connect(db_url) as conn:
             with conn.cursor() as cur:
-                cur.executemany(upload_slugs_query, params)
+                cur.executemany(
+                    query=get_query_from_sql_file("upload_slugs.sql"),
+                    params_seq=params
+                )
     except Exception as e:
         print(f"ERROR: Can not upload URLs to top_events table - {e}")
         raise
     
 def add_ai_summary(db_url):
 
-    query = """
-        SELECT 
-            global_event_id,
-            date_added,
-            goldstein_scale,
-            event_code,
-            event_description,
-            source_url,
-            action_geo_full_name,
-            action_geo_type,
-            action_geo_country_code,
-            action_geo_lat,
-            action_geo_long,
-            actor1_name,
-            actor1_geo_full_name,
-            actor1_country_code,
-            actor2_name,
-            actor2_geo_full_name,
-            actor2_country_code,
-            time_added_to_top_events,
-            best_urls_json,
-            avg_tone,
-            articles_1h,
-            articles_1d,
-            articles_1w,
-            relevance_1h,
-            relevance_1d,
-            relevance_1w
-        FROM
-            top_events
-        LEFT JOIN
-            event_cameo_codes USING (event_code)
-        WHERE
-            ai_summary IS NULL
-
-            AND
-
-            (relevance_1h > 0
-            OR relevance_1d > 0
-            OR relevance_1w > 0)
-    """
-
     try:
         with psycopg.connect(
                 db_url,
                 row_factory=dict_row # output format is [{col_1 : val, col_2 : val ,...}, same for other events...]
             ) as conn:
-            result = conn.execute(query)
+            result = conn.execute(
+                query=get_query_from_sql_file("data_for_summary.sql")
+            )
             top_events_without_ai_summary_data = result.fetchall()
     except Exception as e:
         print(f"ERROR: add_ai_summary() getting top_events data - {e}")
@@ -244,35 +189,24 @@ def add_ai_summary(db_url):
         print("Gemini returned no summaries")
         return
 
-    upload_summaries_query = """
-
-        UPDATE top_events
-        SET ai_summary = %(ai_summary)s,
-            ai_evidence_quality = %(ai_evidence_quality)s
-        WHERE global_event_id = %(global_event_id)s
-
-    """
-
     try:
         with psycopg.connect(db_url) as conn:
             with conn.cursor() as cur:
-                cur.executemany(upload_summaries_query, params)
+                cur.executemany(
+                    query=get_query_from_sql_file("upload_summaries.sql"),
+                    params_seq=params
+                )
     except Exception as e:
         print(f"ERROR: Can not upload AI summaries to top_events table - {e}")
         raise
 
 def delete_old_rows_table_15min(db_url):
 
-    query = """
-        DELETE FROM
-            articles_table_15_min
-        WHERE
-            time_window_15min < NOW() - INTERVAL '1 week';
-    """
-
     try:
         with psycopg.connect(db_url) as conn:
-            conn.execute(query)
+            conn.execute(
+                query=get_query_from_sql_file("delete_old_rows.sql")
+            )
     except Exception as e:
         print(f"Error: Problem in delete_old_rows_table_15min() - {e}")
         raise
