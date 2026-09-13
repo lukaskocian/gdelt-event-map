@@ -283,10 +283,19 @@ if __name__ == "__main__":
 
     db_url, bq_client = load_env_vars()
 
-    update_articles_table_15min(db_url, bq_client) # bigquery -> python -> Neon articles_table_15_min
-    update_top_events_table(db_url) # all in PostgreSQL (Neon) between tables top_events and articles_table_15_min
+    # bigquery -> python -> Neon articles_table_15_min
+    update_articles_table_15min(db_url, bq_client)
+
+    # all in PostgreSQL (Neon) between tables top_events and articles_table_15_min
+    update_top_events_table(db_url)
+
+    # after a week rows from articles_table_15_min are deleted
     delete_old_rows_table_15min(db_url)
+
+    # top_events event ids -> python -> bigquery find URLs + extract slugs -> python -> add slugs to top_events
     add_slugs(db_url, bq_client)
+
+    # top_events -> python -> Gemini API -> python -> top_events
     add_ai_summary(db_url)
 
     print(datetime.datetime.now(), "*** SUCCESS ***")
