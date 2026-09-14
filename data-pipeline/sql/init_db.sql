@@ -80,253 +80,240 @@ CREATE INDEX IF NOT EXISTS idx_top_relevance_1w ON top_events (relevance_1w DESC
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS country_baseline (
     country_code VARCHAR(3) PRIMARY KEY,   -- FIPS 10-4 code (GDELT ActionGeo_CountryCode)
+    country_name VARCHAR(100),
+    population INTEGER,
+    articles_sum INTEGER,
     normalizing_coef REAL NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 -- Seed every country with a neutral coefficient of 1.0 (placeholder). normalizer.py
-INSERT INTO country_baseline (country_code, normalizing_coef) VALUES
-    ('AA', 1.0),  -- Aruba
-    ('AC', 1.0),  -- Antigua and Barbuda
-    ('AE', 1.0),  -- United Arab Emirates
-    ('AF', 1.0),  -- Afghanistan
-    ('AG', 1.0),  -- Algeria
-    ('AJ', 1.0),  -- Azerbaijan
-    ('AL', 1.0),  -- Albania
-    ('AM', 1.0),  -- Armenia
-    ('AN', 1.0),  -- Andorra
-    ('AO', 1.0),  -- Angola
-    ('AQ', 1.0),  -- American Samoa
-    ('AR', 1.0),  -- Argentina
-    ('AS', 1.0),  -- Australia
-    ('AU', 1.0),  -- Austria
-    ('AV', 1.0),  -- Anguilla
-    ('AY', 1.0),  -- Antarctica
-    ('BA', 1.0),  -- Bahrain
-    ('BB', 1.0),  -- Barbados
-    ('BC', 1.0),  -- Botswana
-    ('BD', 1.0),  -- Bermuda
-    ('BE', 1.0),  -- Belgium
-    ('BF', 1.0),  -- Bahamas
-    ('BG', 1.0),  -- Bangladesh
-    ('BH', 1.0),  -- Belize
-    ('BK', 1.0),  -- Bosnia and Herzegovina
-    ('BL', 1.0),  -- Bolivia
-    ('BM', 1.0),  -- Burma (Myanmar)
-    ('BN', 1.0),  -- Benin
-    ('BO', 1.0),  -- Belarus
-    ('BP', 1.0),  -- Solomon Islands
-    ('BR', 1.0),  -- Brazil
-    ('BT', 1.0),  -- Bhutan
-    ('BU', 1.0),  -- Bulgaria
-    ('BX', 1.0),  -- Brunei
-    ('BY', 1.0),  -- Burundi
-    ('CA', 1.0),  -- Canada
-    ('CB', 1.0),  -- Cambodia
-    ('CD', 1.0),  -- Chad
-    ('CE', 1.0),  -- Sri Lanka
-    ('CF', 1.0),  -- Congo (Brazzaville)
-    ('CG', 1.0),  -- Congo (Kinshasa)
-    ('CH', 1.0),  -- China
-    ('CI', 1.0),  -- Chile
-    ('CJ', 1.0),  -- Cayman Islands
-    ('CK', 1.0),  -- Cocos (Keeling) Islands
-    ('CM', 1.0),  -- Cameroon
-    ('CN', 1.0),  -- Comoros
-    ('CO', 1.0),  -- Colombia
-    ('CQ', 1.0),  -- Northern Mariana Islands
-    ('CS', 1.0),  -- Costa Rica
-    ('CT', 1.0),  -- Central African Republic
-    ('CU', 1.0),  -- Cuba
-    ('CV', 1.0),  -- Cape Verde
-    ('CW', 1.0),  -- Cook Islands
-    ('CY', 1.0),  -- Cyprus
-    ('DA', 1.0),  -- Denmark
-    ('DJ', 1.0),  -- Djibouti
-    ('DO', 1.0),  -- Dominica
-    ('DR', 1.0),  -- Dominican Republic
-    ('EC', 1.0),  -- Ecuador
-    ('EG', 1.0),  -- Egypt
-    ('EI', 1.0),  -- Ireland
-    ('EK', 1.0),  -- Equatorial Guinea
-    ('EN', 1.0),  -- Estonia
-    ('ER', 1.0),  -- Eritrea
-    ('ES', 1.0),  -- El Salvador
-    ('ET', 1.0),  -- Ethiopia
-    ('EZ', 1.0),  -- Czech Republic
-    ('FG', 1.0),  -- French Guiana
-    ('FI', 1.0),  -- Finland
-    ('FJ', 1.0),  -- Fiji
-    ('FK', 1.0),  -- Falkland Islands
-    ('FM', 1.0),  -- Federated States of Micronesia
-    ('FO', 1.0),  -- Faroe Islands
-    ('FP', 1.0),  -- French Polynesia
-    ('FR', 1.0),  -- France
-    ('GA', 1.0),  -- Gambia
-    ('GB', 1.0),  -- Gabon
-    ('GG', 1.0),  -- Georgia
-    ('GH', 1.0),  -- Ghana
-    ('GI', 1.0),  -- Gibraltar
-    ('GJ', 1.0),  -- Grenada
-    ('GK', 1.0),  -- Guernsey
-    ('GL', 1.0),  -- Greenland
-    ('GM', 1.0),  -- Germany
-    ('GP', 1.0),  -- Guadeloupe
-    ('GQ', 1.0),  -- Guam
-    ('GR', 1.0),  -- Greece
-    ('GT', 1.0),  -- Guatemala
-    ('GV', 1.0),  -- Guinea
-    ('GY', 1.0),  -- Guyana
-    ('GZ', 1.0),  -- Gaza Strip
-    ('HA', 1.0),  -- Haiti
-    ('HK', 1.0),  -- Hong Kong
-    ('HO', 1.0),  -- Honduras
-    ('HR', 1.0),  -- Croatia
-    ('HU', 1.0),  -- Hungary
-    ('IC', 1.0),  -- Iceland
-    ('ID', 1.0),  -- Indonesia
-    ('IM', 1.0),  -- Isle of Man
-    ('IN', 1.0),  -- India
-    ('IO', 1.0),  -- British Indian Ocean Territory
-    ('IR', 1.0),  -- Iran
-    ('IS', 1.0),  -- Israel
-    ('IT', 1.0),  -- Italy
-    ('IV', 1.0),  -- Cote d'Ivoire
-    ('IZ', 1.0),  -- Iraq
-    ('JA', 1.0),  -- Japan
-    ('JE', 1.0),  -- Jersey
-    ('JM', 1.0),  -- Jamaica
-    ('JO', 1.0),  -- Jordan
-    ('KE', 1.0),  -- Kenya
-    ('KG', 1.0),  -- Kyrgyzstan
-    ('KN', 1.0),  -- North Korea
-    ('KR', 1.0),  -- Kiribati
-    ('KS', 1.0),  -- South Korea
-    ('KT', 1.0),  -- Christmas Island
-    ('KU', 1.0),  -- Kuwait
-    ('KV', 1.0),  -- Kosovo
-    ('KZ', 1.0),  -- Kazakhstan
-    ('LA', 1.0),  -- Laos
-    ('LE', 1.0),  -- Lebanon
-    ('LG', 1.0),  -- Latvia
-    ('LH', 1.0),  -- Lithuania
-    ('LI', 1.0),  -- Liberia
-    ('LO', 1.0),  -- Slovakia
-    ('LS', 1.0),  -- Liechtenstein
-    ('LT', 1.0),  -- Lesotho
-    ('LU', 1.0),  -- Luxembourg
-    ('LY', 1.0),  -- Libya
-    ('MA', 1.0),  -- Madagascar
-    ('MB', 1.0),  -- Martinique
-    ('MC', 1.0),  -- Macau
-    ('MD', 1.0),  -- Moldova
-    ('MF', 1.0),  -- Mayotte
-    ('MG', 1.0),  -- Mongolia
-    ('MH', 1.0),  -- Montserrat
-    ('MI', 1.0),  -- Malawi
-    ('MJ', 1.0),  -- Montenegro
-    ('MK', 1.0),  -- North Macedonia
-    ('ML', 1.0),  -- Mali
-    ('MN', 1.0),  -- Monaco
-    ('MO', 1.0),  -- Morocco
-    ('MP', 1.0),  -- Mauritius
-    ('MR', 1.0),  -- Mauritania
-    ('MT', 1.0),  -- Malta
-    ('MU', 1.0),  -- Oman
-    ('MV', 1.0),  -- Maldives
-    ('MX', 1.0),  -- Mexico
-    ('MY', 1.0),  -- Malaysia
-    ('MZ', 1.0),  -- Mozambique
-    ('NC', 1.0),  -- New Caledonia
-    ('NE', 1.0),  -- Niue
-    ('NF', 1.0),  -- Norfolk Island
-    ('NG', 1.0),  -- Niger
-    ('NH', 1.0),  -- Vanuatu
-    ('NI', 1.0),  -- Nigeria
-    ('NL', 1.0),  -- Netherlands
-    ('NO', 1.0),  -- Norway
-    ('NP', 1.0),  -- Nepal
-    ('NR', 1.0),  -- Nauru
-    ('NS', 1.0),  -- Suriname
-    ('NU', 1.0),  -- Nicaragua
-    ('NZ', 1.0),  -- New Zealand
-    ('OD', 1.0),  -- South Sudan
-    ('PA', 1.0),  -- Paraguay
-    ('PC', 1.0),  -- Pitcairn Islands
-    ('PE', 1.0),  -- Peru
-    ('PK', 1.0),  -- Pakistan
-    ('PL', 1.0),  -- Poland
-    ('PM', 1.0),  -- Panama
-    ('PO', 1.0),  -- Portugal
-    ('PP', 1.0),  -- Papua New Guinea
-    ('PS', 1.0),  -- Palau
-    ('PU', 1.0),  -- Guinea-Bissau
-    ('QA', 1.0),  -- Qatar
-    ('RE', 1.0),  -- Reunion
-    ('RI', 1.0),  -- Serbia
-    ('RM', 1.0),  -- Marshall Islands
-    ('RN', 1.0),  -- Saint Martin
-    ('RO', 1.0),  -- Romania
-    ('RP', 1.0),  -- Philippines
-    ('RQ', 1.0),  -- Puerto Rico
-    ('RS', 1.0),  -- Russia
-    ('RW', 1.0),  -- Rwanda
-    ('SA', 1.0),  -- Saudi Arabia
-    ('SB', 1.0),  -- Saint Pierre and Miquelon
-    ('SC', 1.0),  -- Saint Kitts and Nevis
-    ('SE', 1.0),  -- Seychelles
-    ('SF', 1.0),  -- South Africa
-    ('SG', 1.0),  -- Senegal
-    ('SH', 1.0),  -- Saint Helena
-    ('SI', 1.0),  -- Slovenia
-    ('SL', 1.0),  -- Sierra Leone
-    ('SM', 1.0),  -- San Marino
-    ('SN', 1.0),  -- Singapore
-    ('SO', 1.0),  -- Somalia
-    ('SP', 1.0),  -- Spain
-    ('ST', 1.0),  -- Saint Lucia
-    ('SU', 1.0),  -- Sudan
-    ('SV', 1.0),  -- Svalbard
-    ('SW', 1.0),  -- Sweden
-    ('SY', 1.0),  -- Syria
-    ('SZ', 1.0),  -- Switzerland
-    ('TD', 1.0),  -- Trinidad and Tobago
-    ('TH', 1.0),  -- Thailand
-    ('TI', 1.0),  -- Tajikistan
-    ('TK', 1.0),  -- Turks and Caicos Islands
-    ('TL', 1.0),  -- Tokelau
-    ('TN', 1.0),  -- Tonga
-    ('TO', 1.0),  -- Togo
-    ('TP', 1.0),  -- Sao Tome and Principe
-    ('TS', 1.0),  -- Tunisia
-    ('TT', 1.0),  -- Timor-Leste
-    ('TU', 1.0),  -- Turkey
-    ('TV', 1.0),  -- Tuvalu
-    ('TW', 1.0),  -- Taiwan
-    ('TX', 1.0),  -- Turkmenistan
-    ('TZ', 1.0),  -- Tanzania
-    ('UG', 1.0),  -- Uganda
-    ('UK', 1.0),  -- United Kingdom
-    ('UP', 1.0),  -- Ukraine
-    ('US', 1.0),  -- United States
-    ('UV', 1.0),  -- Burkina Faso
-    ('UY', 1.0),  -- Uruguay
-    ('UZ', 1.0),  -- Uzbekistan
-    ('VC', 1.0),  -- Saint Vincent and the Grenadines
-    ('VE', 1.0),  -- Venezuela
-    ('VI', 1.0),  -- British Virgin Islands
-    ('VM', 1.0),  -- Vietnam
-    ('VQ', 1.0),  -- US Virgin Islands
-    ('VT', 1.0),  -- Vatican City
-    ('WA', 1.0),  -- Namibia
-    ('WE', 1.0),  -- West Bank
-    ('WF', 1.0),  -- Wallis and Futuna
-    ('WI', 1.0),  -- Western Sahara
-    ('WS', 1.0),  -- Samoa
-    ('WZ', 1.0),  -- Eswatini
-    ('YM', 1.0),  -- Yemen
-    ('ZA', 1.0),  -- Zambia
-    ('ZI', 1.0)   -- Zimbabwe
+INSERT INTO country_baseline (country_code, country_name, population, articles_sum, normalizing_coef) VALUES
+('US', 'United States', 349825585, 828243, 0.260184994461565),
+('RS', 'Russia', 139768208, 301307, 0.285750913030847),
+('UP', 'Ukraine', 42654581, 203718, 0.2),
+('UK', 'United Kingdom', 67508295, 202541, 0.205320654846302),
+('IS', 'Israel', 9432098, 186859, 0.2),
+('CH', 'China', 1407631130, 150240, 5),
+('IN', 'India', 1409416720, 140441, 5),
+('FR', 'France', 69031230, 130431, 0.326026753075282),
+('TU', 'Turkey', 85008086, 121006, 0.432754690701693),
+('IT', 'Italy', 62608648, 118297, 0.326023605147945),
+('SP', 'Spain', 51648839, 111696, 0.284846832198363),
+('GM', 'Germany', 79006126, 104023, 0.467864230602924),
+('MX', 'Mexico', 135957079, 98862, 0.847151110175023),
+('CA', 'Canada', 37773183, 87894, 0.264735879141327),
+('BR', 'Brazil', 219461193, 74158, 1.82300633641941),
+('ID', 'Indonesia', 278540320, 72318, 2.37263052953765),
+('IR', 'Iran', 89656713, 69557, 0.794018134230354),
+('GR', 'Greece', 10654081, 63468, 0.2),
+('AS', 'Australia', 25264384, 61590, 0.252689363032127),
+('EG', 'Egypt', 117689429, 60129, 1.20570739795392),
+('SY', 'Syria', 24853274, 59732, 0.256309676495458),
+('VE', 'Venezuela', 34532352, 57307, 0.371199118622538),
+('NI', 'Nigeria', 248614793, 51519, 2.97267884689058),
+('SW', 'Sweden', 10658009, 49366, 0.2),
+('JA', 'Japan', 122893582, 49209, 1.53841361346802),
+('PK', 'Pakistan', 231300307, 47163, 3.02108704020546),
+('AR', 'Argentina', 47687700, 45235, 0.649411886020078),
+('KS', 'Korea, South', 52657758, 44559, 0.72797318045855),
+('RO', 'Romania', 20779194, 43507, 0.294210393627971),
+('SA', 'Saudi Arabia', 37642915, 42858, 0.541052985284107),
+('PL', 'Poland', 37617099, 38051, 0.608986515569264),
+('BE', 'Belgium', 12090735, 37916, 0.2),
+('IZ', 'Iraq', 48784528, 36632, 0.820370297879247),
+('CO', 'Colombia', 51579206, 35417, 0.897121638672738),
+('AF', 'Afghanistan', 42025073, 31207, 0.82955446771265),
+('SZ', 'Switzerland', 8714172, 30550, 0.2),
+('EI', 'Ireland', 5462183, 27300, 0.2),
+('BG', 'Bangladesh', 171725139, 24907, 4.24718234381074),
+('RP', 'Philippines', 119100025, 22378, 3.27852903528341),
+('CI', 'Chile', 18864224, 20925, 0.555343801916254),
+('PO', 'Portugal', 10186270, 20831, 0.301226735820731),
+('PE', 'Peru', 33533721, 20730, 0.996485298263778),
+('AM', 'Armenia', 2946731, 20696, 0.2),
+('LE', 'Lebanon', 5425815, 20626, 0.2),
+('SF', 'South Africa', 59611209, 19227, 1.90987460818304),
+('CE', 'Sri Lanka', 23682392, 18479, 0.789469853982758),
+('MK', 'Macedonia', 2138418, 18459, 0.2),
+('KN', 'Korea, North', 26345148, 18248, 0.889352277324079),
+('SU', 'Sudan', 53184947, 18090, 1.81108408838942),
+('NL', 'Netherlands', 17623338, 17649, 0.615115284604791),
+('YM', 'Yemen', 33394269, 17268, 1.191292348289),
+('AL', 'Albania', 3107514, 17258, 0.2),
+('BU', 'Bulgaria', 6679018, 17017, 0.241778715581672),
+('AJ', 'Azerbaijan', 10588595, 16240, 0.401643519099224),
+('RI', 'Serbia', 6811682, 15897, 0.263953631710107),
+('HU', 'Hungary', 9579699, 15474, 0.381362268295183),
+('GH', 'Ghana', 33292971, 15185, 1.35059832665883),
+('HR', 'Croatia', 4105344, 14923, 0.2),
+('NZ', 'New Zealand', 4805528, 14529, 0.20374822753813),
+('LY', 'Libya', 7456802, 14413, 0.318703384772558),
+('DA', 'Denmark', 6018006, 14219, 0.260718598718389),
+('CU', 'Cuba', 10916193, 14086, 0.477388521524122),
+('JO', 'Jordan', 11500252, 13740, 0.515595449007156),
+('BO', 'Belarus', 9290324, 13614, 0.420371791035194),
+('EZ', 'Czechia', 10687374, 13583, 0.4846896634367),
+('MO', 'Morocco', 36775354, 13267, 1.70754667552255),
+('AU', 'Austria', 9008251, 13215, 0.41991536124556),
+('VM', 'Vietnam', 103118051, 12834, 4.94949753270261),
+('NO', 'Norway', 5722238, 12763, 0.276185961024429),
+('MY', 'Malaysia', 35077487, 12666, 1.70599376557758),
+('QA', 'Qatar', 2575079, 12588, 0.2),
+('KE', 'Kenya', 53848689, 12503, 2.65307394359818),
+('BL', 'Bolivia', 12625775, 12330, 0.630787996118041),
+('AE', 'United Arab Emirates', 10902937, 12267, 0.547511932231085),
+('FI', 'Finland', 5637506, 11624, 0.298758222510178),
+('CY', 'Cyprus', 1340434, 11367, 0.2),
+('TH', 'Thailand', 69658019, 11174, 3.84017400524212),
+('LH', 'Lithuania', 2541302, 11089, 0.2),
+('ML', 'Mali', 23294054, 11033, 1.30058850367006),
+('SN', 'Singapore', 6834269, 10888, 0.386662814404049),
+('KZ', 'Kazakhstan', 19932595, 10880, 1.12855673883472),
+('MD', 'Moldova', 3138640, 10454, 0.2),
+('EC', 'Ecuador', 18049920, 10104, 1.10045020314201),
+('TW', 'Taiwan', 23630722, 9995, 1.45640661776587),
+('AG', 'Algeria', 46342439, 9763, 2.92404497811066),
+('TS', 'Tunisia', 12173085, 9364, 0.800806704719463),
+('NU', 'Nicaragua', 6549557, 8724, 0.462471229478466),
+('ZI', 'Zimbabwe', 16344113, 8510, 1.18309671163785),
+('KU', 'Kuwait', 3202667, 7881, 0.250333463700397),
+('MP', 'Mauritius', 1418027, 7857, 0.2),
+('HA', 'Haiti', 11882509, 7683, 0.952721069551378),
+('PM', 'Panama', 4160582, 7651, 0.334984208911274),
+('KV', 'Kosovo', 2013330, 7338, 0.2),
+('SO', 'Somalia', 13619600, 7239, 1.15897542495842),
+('NP', 'Nepal', 31766361, 7104, 2.75456462173943),
+('HO', 'Honduras', 10274632, 6752, 0.937394267746496),
+('GT', 'Guatemala', 18820378, 6456, 1.79578058206375),
+('WE', 'West Bank', 3203036, 6401, 0.308249544676349),
+('LG', 'Latvia', 1750604, 6352, 0.2),
+('ET', 'Ethiopia', 134738965, 6327, 5),
+('HK', 'Hong Kong', 7298281, 5817, 0.772876260727932),
+('UY', 'Uruguay', 3439597, 5790, 0.365946374470593),
+('SI', 'Slovenia', 2089909, 5706, 0.22562335870419),
+('UG', 'Uganda', 52205637, 5408, 5),
+('RW', 'Rwanda', 14081088, 5390, 1.60929587662177),
+('EN', 'Estonia', 1172873, 5184, 0.2),
+('SG', 'Senegal', 17957583, 5032, 2.19834424621839),
+('CM', 'Cameroon', 31253818, 4914, 3.91792734202134),
+('KG', 'Kyrgyzstan', 6263802, 4806, 0.802865332763226),
+('BM', 'Burma', 59182530, 4629, 5),
+('PA', 'Paraguay', 7681441, 4546, 1.0408825285023),
+('MU', 'Oman', 4048039, 4490, 0.555375603341767),
+('GA', 'Gambia, The', 2406911, 4465, 0.332067994730579),
+('LO', 'Slovakia', 5394187, 4343, 0.765111306369988),
+('LU', 'Luxembourg', 690095, 4326, 0.2),
+('BA', 'Bahrain', 1592166, 4247, 0.230937540164937),
+('CB', 'Cambodia', 18244825, 4195, 2.67914480858253),
+('GZ', 'Gaza Strip', 2161279, 4158, 0.320195187154633),
+('MT', 'Malta', 473066, 4154, 0.2),
+('TZ', 'Tanzania', 68676464, 3781, 5),
+('AO', 'Angola', 39770244, 3521, 5),
+('JM', 'Jamaica', 2785170, 3486, 0.492167324323355),
+('RQ', 'Puerto Rico', 2946436, 3482, 0.521262756690226),
+('NG', 'Niger', 25351560, 3389, 4.60809656006868),
+('UV', 'Burkina Faso', 24152233, 3357, 4.43194538133898),
+('GL', 'Greenland', 57032, 3315, 0.2),
+('ES', 'El Salvador', 6301042, 3313, 1.17160007185047),
+('GV', 'Guinea', 14773442, 3208, 2.83684614679132),
+('CD', 'Chad', 20268491, 3191, 3.91275867804),
+('CF', 'Congo (Brazzaville)', 6087248, 3073, 1.2202445776898),
+('UZ', 'Uzbekistan', 32050280, 2972, 5),
+('BK', 'Bosnia and Herzegovina', 3775296, 2966, 0.784094328093781),
+('JE', 'Jersey', 104612, 2692, 0.2),
+('IC', 'Iceland', 369323, 2631, 0.2),
+('LI', 'Liberia', 5968138, 2624, 1.40108175296482),
+('FJ', 'Fiji', 959445, 2560, 0.230870567090634),
+('IV', 'Cote d''Ivoire', 31285402, 2442, 5),
+('DJ', 'Djibouti', 1035707, 2283, 0.279459868976774),
+('MZ', 'Mozambique', 33114109, 2225, 5),
+('GG', 'Georgia', 4926415, 2178, 1.3933543236311),
+('ZA', 'Zambia', 20682115, 2178, 5),
+('MI', 'Malawi', 25775947, 2177, 5),
+('TD', 'Trinidad and Tobago', 1177794, 2090, 0.347145470120458),
+('GY', 'Guyana', 787562, 2010, 0.241366585575075),
+('CG', 'Congo (Kinshasa)', 101122048, 1989, 5),
+('BF', 'Bahamas, The', 351132, 1942, 0.2),
+('MJ', 'Montenegro', 594046, 1929, 0.2),
+('MR', 'Mauritania', 4509825, 1858, 1.49521082023305),
+('TX', 'Turkmenistan', 5849515, 1853, 1.94461168357494),
+('CS', 'Costa Rica', 5399920, 1832, 1.81572597952814),
+('MA', 'Madagascar', 30831188, 1816, 5),
+('OD', 'South Sudan', 13788386, 1806, 4.70309918606014),
+('TI', 'Tajikistan', 9631856, 1753, 3.38467143418308),
+('MV', 'Maldives', 388810, 1738, 0.2),
+('MG', 'Mongolia', 3323506, 1721, 1.18960847057698),
+('WA', 'Namibia', 2930635, 1641, 1.1001239057581),
+('BY', 'Burundi', 15257828, 1612, 5),
+('DR', 'Dominican Republic', 11069071, 1351, 5),
+('TO', 'Togo', 9977125, 1348, 4.55936091848182),
+('BC', 'Botswana', 2516538, 1311, 1.18246760628448),
+('BN', 'Benin', 13896629, 1282, 5),
+('BB', 'Barbados', 297302, 1227, 0.2),
+('GB', 'Gabon', 2574850, 1213, 1.30761406753931),
+('SL', 'Sierra Leone', 7691449, 1138, 4.16345958912871),
+('LA', 'Laos', 8074107, 1132, 4.39376196186849),
+('BH', 'Belize', 440121, 1126, 0.240780965518181),
+('CT', 'Central African Republic', 6772059, 1063, 3.92442397023239),
+('BX', 'Brunei', 505449, 1059, 0.294015233497423),
+('GJ', 'Grenada', 114966, 1013, 0.2),
+('PP', 'Papua New Guinea', 7932519, 991, 4.93089685028742),
+('WS', 'Samoa', 211754, 972, 0.2),
+('AN', 'Andorra', 84962, 926, 0.2),
+('ER', 'Eritrea', 6487978, 923, 4.33008197835571),
+('DO', 'Dominica', 74311, 922, 0.2),
+('BD', 'Bermuda', 73006, 919, 0.2),
+('MN', 'Monaco', 31879, 872, 0.2),
+('GQ', 'Guam', 169663, 824, 0.2),
+('GI', 'Gibraltar', 29763, 778, 0.2),
+('PS', 'Palau', 22183, 718, 0.2),
+('NS', 'Suriname', 641933, 699, 0.565719276749448),
+('EK', 'Equatorial Guinea', 955729, 678, 0.868347426197321),
+('BT', 'Bhutan', 827332, 649, 0.785278264342143),
+('MC', 'Macau', 632847, 619, 0.629791112619643),
+('LT', 'Lesotho', 1968013, 598, 2.02728697445374),
+('TN', 'Tonga', 104246, 520, 0.2),
+('NH', 'Vanuatu', 328378, 510, 0.396636181528201),
+('VC', 'Saint Vincent and the Grenadines', 100224, 509, 0.2),
+('SE', 'Seychelles', 99323, 504, 0.2),
+('BP', 'Solomon Islands', 759237, 474, 0.986705329292429),
+('TT', 'Timor-Leste', 1569747, 410, 2.3584911780217),
+('VQ', 'Virgin Islands, U.S.', 102854, 394, 0.2),
+('WZ', 'Eswatini', 1149621, 359, 1.97264388662663),
+('GK', 'Guernsey', 67797, 356, 0.2),
+('AC', 'Antigua and Barbuda', 104924, 335, 0.2),
+('MH', 'Montserrat', 5564, 326, 0.2),
+('CV', 'Cabo Verde', 626000, 316, 1.22032554288791),
+('CN', 'Comoros', 917059, 291, 1.94130037967095),
+('ST', 'Saint Lucia', 168831, 282, 0.368800529236024),
+('CJ', 'Cayman Islands', 68775, 234, 0.2),
+('TV', 'Tuvalu', 11907, 231, 0.2),
+('PU', 'Guinea-Bissau', 2243921, 225, 5),
+('WI', 'Western Sahara', 752674, 223, 2.07917240378062),
+('NC', 'New Caledonia', 310791, 210, 0.911669845372723),
+('AA', 'Aruba', 127388, 180, 0.435957812933441),
+('LS', 'Liechtenstein', 40757, 179, 0.2),
+('NR', 'Nauru', 10054, 161, 0.2),
+('TK', 'Turks and Caicos Islands', 62335, 158, 0.243031925609962),
+('RM', 'Marshall Islands', 84219, 144, 0.360276586564683),
+('FP', 'French Polynesia', 307273, 128, 1.47877766337081),
+('SM', 'San Marino', 35368, 117, 0.2),
+('CW', 'Cook Islands', 7461, 116, 0.2),
+('AQ', 'American Samoa', 45295, 105, 0.265735401901326),
+('AV', 'Anguilla', 20076, 105, 0.2),
+('FM', 'Micronesia, Federated States of', 98172, 91, 0.664560765124108),
+('IM', 'Isle of Man', 92916, 80, 0.71546594914496),
+('KR', 'Kiribati', 118948, 79, 0.927509793453237),
+('SC', 'Saint Kitts and Nevis', 55674, 76, 0.451260462225038),
+('FO', 'Faroe Islands', 53500, 76, 0.433639306122059),
+('RN', 'Saint Martin', 33130, 76, 0.268532153492034),
+('TP', 'Sao Tome and Principe', 230621, 73, 1.94609681518508),
+('VI', 'Virgin Islands, British', 42105, 58, 0.447192106607949),
+('SH', 'Saint Helena, Ascension, and Tristan da Cunha', 7889, 40, 0.2),
+('CQ', 'Northern Mariana Islands', 49586, 36, 0.848486675044652),
+('SB', 'Saint Pierre and Miquelon', 4966, 5, 0.611822102277992),
+('WF', 'Wallis and Futuna', 16045, 3, 3.29463204156611)
 ON CONFLICT (country_code) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS event_cameo_codes (
