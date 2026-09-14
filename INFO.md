@@ -332,3 +332,18 @@ SOLUTION: Changed the way of extracting slugs. Now we are spliting URL with / an
 PROBLEM 3:
 Languages like arabic or hindi are unicoded in URL, therefore instead of words in slug we see eg. "BD%1A%C2" which is not suitable for LLM prompt.
 SOLUTION: Added JS function to gdelt_ingest.sql and get_slugs.sql that decodes the URL. JS overhead makes it slower but for our amount of rows it is not a problem.
+
+
+CALCULATION OF COUNTRY NORM. COEFICIENTS
+
+coeficients are calculated based on this equation:
+COUNTRY_POPULATION / WORLD_POPULATION = (ARTICLES_ABOUT_COUNTRY_SUM / ALL_ARTICLES_SUM) * COEF
+it is based on an idea that sum of articles about a country should be proportional to the country`s size
+
+Query for calculation (data-pipeline/sql/calculate_norm_coef.sql)
+- is based on gdelt_ingest.sql (because it should be as close to detection of events in production as possible)
+- uses U.S. Census Bureau International Database for population data
+    - benefit: Census is US gov. product as well as GDELT, therefore they use same Country Codes (FIPS10-4)
+
+- scaning whole GDELT is expensive, therefore we scan only 40 days across past 10 years as sample
+- for simplicity super small teritorries deleted (eg. Jan Mayen - 'JN')
