@@ -358,7 +358,8 @@ in our database, gdelt_ingest.sql will not backfill those earlier windows on the
 ---- BACKEND ----
 
 index.ts
-- added 60 sec cache - good for MVP, but in the future Database server will communicate to backend when he is updated
+- added 60 sec cache - good for MVP, but in the future this should become push-based: the ingest job notifies the backend once
+  a new 15-min window lands, and the backend invalidates the cache on that signal.
 - func get_data() is not async, because when there are 300 user requests right after the cache is expired, the first one calls get_data_from_db() and gets a Promise which is then saved in cached_data so all other 299 users get Promise from cached_data; If get_data() was async, these 300 requests would all call get_data_from_db(), which means 300 SQL queries for a database
 
 TODO:  
