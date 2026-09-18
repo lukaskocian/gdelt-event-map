@@ -362,8 +362,31 @@ index.ts
   a new 15-min window lands, and the backend invalidates the cache on that signal.
 - func get_data() is not async, because when there are 300 user requests right after the cache is expired, the first one calls get_data_from_db() and gets a Promise which is then saved in cached_data so all other 299 users get Promise from cached_data; If get_data() was async, these 300 requests would all call get_data_from_db(), which means 300 SQL queries for a database
 
-TODO:  
-- error catch
-- health endpoint (last 15 min window of) is used as indicator when DB was updated
-    - shown on web for users
-    - used in CRON JOB, that sends email if db is not being updated
+
+.listen(3000) ==> .listen(process.env.PORT ?? 3000), because Google Cloud Run assigns own port, if no port is assigned it will be set to 3000
+
+
+MONITORING PROBLEM:
+
+FIRST APROACH
+Health Indicators:
+- Last update shown on web for users (goes every 15 min with event data) - STAYS THE SAME
+- CRON JOB every 5 min sends email if db is not being updated (last 15 min window in DB is old)
+
+The problem: 
+- CRON JOB wakes up Neon every 5 min + it takes 5 min for Neon to turn off => Neon never sleeps, we do not fit into free 100 CU-hours per month
+
+SECOND APROACH:
+
+Everything that must run often is answered WITHOUT touching Neon; only the rare deep check (once in 24h) is allowed to query it.
+
+Health Indicators:
+- Last update shown on web for users (goes every 15 min with event data) - STAYS THE SAME
+- CRON JOB checks every -  5 minutes    - endpoint /backend_health - only to see that backend is running, not quering the DB
+                                        - if update_db.py on Google Cloud Platform run succesfully, only to see that data-pipeline is running, not querying the DB
+
+                        -  24 hours (TO SAVE THE COMPUTE) /db_health endpoint that returns - distinct_windows_over_24h
+                                                                                                - latest_15min_window
+                                                                                                - lag_minutes
+
+

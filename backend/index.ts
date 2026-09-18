@@ -5,9 +5,26 @@ import { cors } from "@elysia/cors";
 let time_cache_updated : number | null = null;
 let cached_data : any;
 
+// shared function - for users | for /db_health endpoint (for Google Cloud CRON JOB)
+const get_db_health = async () => {
+
+    // last window
+    const db_health = await sql`
+
+        SELECT
+            MAX(time_window_15min) AS latest_15min_window,
+            EXTRACT( EPOCH FROM (NOW() - MAX(time_window_15min)) ) / 60 AS lag_minutes,
+            COUNT(DISTINCT time_window_15min) FILTER (WHERE time_window_15min > NOW() - INTERVAL '1 day')
+        FROM
+            articles_table_15_min
+    `
+
+    return db_health[0]
+}
+
 const get_data_from_db = async () => {
 
-    const result = await sql`
+    const events = await sql`
 
         WITH week_top_10 AS (
             SELECT
@@ -83,6 +100,13 @@ const get_data_from_db = async () => {
         LEFT JOIN
             event_cameo_codes USING (event_code)
     `;
+    
+    const db_health = await get_db_health();
+
+    const result = {
+        events : events,
+        health : db_health
+    }
 
     return result;
 }
@@ -99,7 +123,12 @@ const get_data = () => {
     return cached_data
 }
 
-const app = new Elysia().use(cors()).get("/", () => get_data()).listen(3000);
+const app = new Elysia()
+                .use(cors())
+                .get("/", () => get_data())
+                .get("/db_health", () => get_db_health())
+                .get("/backend_health", () => {})
+                .listen(process.env.PORT ?? 3000);
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
