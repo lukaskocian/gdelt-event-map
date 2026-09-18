@@ -305,6 +305,8 @@ Moved from a single "One Big Table" to a **three-table model**:
   is ever needed, add an append-only `event_relevance_history` table.
 
 
+---- DATA PIPELINE ----
+
 refresh_top_events.sql - instead of creating 3 tables (WITH) for each timeframe (scaing articles_table_15_min 3x), we use FILTER
 
 refresh_top_events.sql - using COALESCE if country code is not in country_baseline => relevance is 0 (that way we can keep track of what countries we have there and ignore codes for eg. oceans, countries that can not be ploted on the map for some reason)
@@ -347,3 +349,9 @@ Query for calculation (data-pipeline/sql/calculate_norm_coef.sql)
 
 - scaning whole GDELT is expensive, therefore we scan only 40 days across past 10 years as sample
 - for simplicity super small teritorries deleted (eg. Jan Mayen - 'JN')
+
+
+MVP DECISION
+when CRON for some reason skippes running update_db.py and as a consequence of that there are missing some 15-min windows of data
+in our database, gdelt_ingest.sql will not backfill those earlier windows on the next run.
+
