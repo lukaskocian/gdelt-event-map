@@ -1,4 +1,5 @@
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 import time
 from pydantic import BaseModel, Field
@@ -47,7 +48,9 @@ class EventsList(BaseModel):
 def get_summary(top_events_data):
 
     load_dotenv()
-    client = genai.Client()
+    client = genai.Client(
+        http_options=types.HttpOptions(timeout=40_000) # gives it max 40 sec to run
+    )
 
     start = time.time()
 

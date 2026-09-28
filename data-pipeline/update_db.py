@@ -166,8 +166,12 @@ def add_ai_summary(db_url):
         print("All top events have their AI Summary")
         return
 
-    summaries_json = get_summary(top_events_without_ai_summary_data)
-    summaries = json.loads(summaries_json)["sumlist"]
+    try:
+        summaries_json = get_summary(top_events_without_ai_summary_data)
+        summaries = json.loads(summaries_json)["sumlist"]
+    except Exception as e:
+        print("There will be no new summaries because of a problem with Gemini respons: ", e)
+        return
 
     params = [
         {

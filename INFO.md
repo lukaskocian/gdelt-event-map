@@ -355,6 +355,18 @@ MVP DECISION
 when CRON for some reason skippes running update_db.py and as a consequence of that there are missing some 15-min windows of data
 in our database, gdelt_ingest.sql will not backfill those earlier windows on the next run.
 
+
+In production, Gemini sometimes went down completely. That crashed update_db.py,
+so GCP marked the execution as failed and sent me an email. I therefore wrapped the
+Gemini call in a try/except block, which makes creating the summaries "optional —
+only when Gemini happens to be available".
+
+Under heavy load, a request to Gemini sometimes does not come back with an error
+saying that Google has no capacity to answer. Instead it just waits, sometimes for
+10 minutes, which we cannot afford. So gemini_summary_maker.py now has a 40 second
+timeout.
+
+
 ---- BACKEND ----
 
 index.ts
