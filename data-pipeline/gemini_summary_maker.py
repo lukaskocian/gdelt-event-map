@@ -1,5 +1,4 @@
 from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 import time
 from pydantic import BaseModel, Field
@@ -48,9 +47,7 @@ class EventsList(BaseModel):
 def get_summary(top_events_data):
 
     load_dotenv()
-    client = genai.Client(
-        http_options=types.HttpOptions(timeout=40_000) # gives it max 40 sec to run
-    )
+    client = genai.Client()
 
     start = time.time()
 
@@ -87,18 +84,18 @@ def get_summary(top_events_data):
         Here is the batch:
         {top_events_data}
     """
-
-    interaction = client.interactions.create(
-        model="gemini-3.5-flash-lite",
-        input=PROMPT,
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": EventsList.model_json_schema()
-        },
-    )
-
-    end = time.time()
-    print(f"AI summary took {end - start} sec")
+    
+    try:
+        interaction = client.interactions.create(
+            model="gemini-3.5-flash-lite",
+            input=PROMPT,
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": EventsList.model_json_schema()
+            },
+        )
+    finally:
+        print(f"AI summary took {time.time() - start:.2f} sec")
 
     return interaction.output_text

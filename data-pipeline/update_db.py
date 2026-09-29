@@ -9,6 +9,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
 import json
+import signal
 
 from gemini_summary_maker import get_summary
 
@@ -147,7 +148,10 @@ def add_slugs(db_url, bq_client):
                 )
     except Exception as e:
         raise ValueError(f"Can not upload URLs to top_events table - {e}")
-    
+
+def _deadline(signum, frame):
+    raise TimeoutError("Gemini exceeded its wall-clock deadline")
+
 def add_ai_summary(db_url):
 
     try:
@@ -166,12 +170,16 @@ def add_ai_summary(db_url):
         print("All top events have their AI Summary")
         return
 
+    signal.signal(signal.SIGALRM, _deadline)
+    signal.setitimer(signal.ITIMER_REAL, 30) # gives Gemini max 30 sec of time to run
     try:
         summaries_json = get_summary(top_events_without_ai_summary_data)
         summaries = json.loads(summaries_json)["sumlist"]
     except Exception as e:
         print("There will be no new summaries because of a problem with Gemini respons: ", e)
         return
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0) # cancels the timer
 
     params = [
         {

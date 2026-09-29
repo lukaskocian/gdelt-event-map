@@ -363,7 +363,7 @@ only when Gemini happens to be available".
 
 Under heavy load, a request to Gemini sometimes does not come back with an error
 saying that Google has no capacity to answer. Instead it just waits, sometimes for
-10 minutes, which we cannot afford. So gemini_summary_maker.py now has a 40 second
+10 minutes, which we cannot afford. So in update_db.py was added a 30 second
 timeout.
 
 
